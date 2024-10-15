@@ -12,7 +12,7 @@ with client.write_api() as write_api:
     point = Point("measurement_name") \
         .tag("companyId", "company_1") \
         .tag("machineId", "machine_1") \
-        .field("temperature", 25.0) \
+        .field("temperature", 10.0) \
         .time(datetime.utcnow(), WritePrecision.NS)
     
     write_api.write(bucket=bucket, record=point)

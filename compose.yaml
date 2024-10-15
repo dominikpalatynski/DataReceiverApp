@@ -13,6 +13,18 @@ services:
     volumes:
       - influxdb2-data:/var/lib/influxdb2
       - influxdb2-config:/etc/influxdb2
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - 3000:3000
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    depends_on:
+      - influxdb2
+    volumes:
+      - grafana-data:/var/lib/grafana
 volumes:
   influxdb2-data:
   influxdb2-config:
+  grafana-data:
