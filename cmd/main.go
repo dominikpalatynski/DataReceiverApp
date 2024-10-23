@@ -7,7 +7,7 @@ import (
 )
 
 func main() {
-    opts := mqtt.NewClientOptions().AddBroker("tcp://localhost:1883").SetClientID("go_subscriber")
+    opts := mqtt.NewClientOptions().AddBroker("tcp://mosquitto:1883").SetClientID("go_subscriber")
     client := mqtt.NewClient(opts)
 
     if token := client.Connect(); token.Wait() && token.Error() != nil {
