@@ -113,6 +113,7 @@ resource "azurerm_linux_virtual_machine" "DataReceiverApp-linux-vm" {
   ]
   # 74.248.137.150
   # Authentication via SSH
+  # ssh -i C:/Users/Roman/.ssh/DataReceiverApp_Azure_Key adminuser@74.248.137.150
   admin_ssh_key {
     username   = "adminuser"
     public_key = file("~/.ssh/DataReceiverApp_Azure_Key.pub") # Path to your SSH public key
