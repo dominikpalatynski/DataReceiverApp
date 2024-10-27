@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"strings"
@@ -18,6 +19,13 @@ type DeviceManager struct {
     org          string
     writeAPIs    map[string]api.WriteAPIBlocking
     mu           sync.RWMutex
+}
+
+type Point struct {
+    Name string `json:"name"`
+    Meta map[string]string `json:"meta"`
+    Data map[string]interface{} `json:"data"`
+    TimeStamp time.Time `json:"timestamp"`
 }
 
 func NewDeviceManager(influxURL, token, org string) *DeviceManager {
@@ -69,14 +77,13 @@ func (dm *DeviceManager) ensureBucketExists(deviceID string) error {
     return nil
 }
 
-func (dm *DeviceManager) processMQTTMessage(topic string, value string) error {
+func (dm *DeviceManager) processMQTTMessage(topic string, data []byte) error {
     parts := strings.Split(topic, "/")
     if len(parts) != 3 {
         return fmt.Errorf("nieprawidłowy format topicu: %s", topic)
     }
     
     deviceID := parts[1]
-    measurement := parts[2]
 
     if err := dm.ensureBucketExists(deviceID); err != nil {
         return err
@@ -84,29 +91,33 @@ func (dm *DeviceManager) processMQTTMessage(topic string, value string) error {
 
     writeAPI := dm.getWriteAPI(deviceID)
 
-    point := influxdb2.NewPoint(
-        measurement,
-        map[string]string{
-            "deviceId": deviceID,
-        },
-        map[string]interface{}{
-            "value": value,
-        },
-        time.Now(),
+    var point Point
+    err := json.Unmarshal(data, &point)
+
+    if(err != nil){
+        log.Println("Błąd dekodowania json", err)
+        return err
+    }
+
+    mappedPoint := influxdb2.NewPoint(
+        point.Name,
+        point.Meta,
+        point.Data,
+        point.TimeStamp,
     )
 
-    return writeAPI.WritePoint(context.Background(), point)
+    return writeAPI.WritePoint(context.Background(), mappedPoint)
 }
 
 func main() {
     deviceManager := NewDeviceManager(
-        "http://influxdb2:8086",
+        "http://localhost:8086",
         "mytoken",
         "myorg",
     )
 
     opts := mqtt.NewClientOptions().
-        AddBroker("tcp://mosquitto:1883")
+        AddBroker("tcp://localhost:1883")
 
     client := mqtt.NewClient(opts)
     if token := client.Connect(); token.Wait() && token.Error() != nil {
@@ -115,7 +126,7 @@ func main() {
 
     topic := "devices/+/measurements"
     if token := client.Subscribe(topic, 0, func(client mqtt.Client, msg mqtt.Message) {
-        err := deviceManager.processMQTTMessage(msg.Topic(), string(msg.Payload()))
+        err := deviceManager.processMQTTMessage(msg.Topic(), msg.Payload())
         if err != nil {
             log.Printf("Błąd przetwarzania wiadomości: %v", err)
         } else{
