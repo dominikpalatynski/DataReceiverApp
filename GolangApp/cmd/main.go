@@ -111,13 +111,13 @@ func (dm *DeviceManager) processMQTTMessage(topic string, data []byte) error {
 
 func main() {
     deviceManager := NewDeviceManager(
-        "http://localhost:8086",
+        "http://influxdb2:8086",
         "mytoken",
         "myorg",
     )
 
     opts := mqtt.NewClientOptions().
-        AddBroker("tcp://localhost:1883")
+        AddBroker("tcp://mosquitto:1883")
 
     client := mqtt.NewClient(opts)
     if token := client.Connect(); token.Wait() && token.Error() != nil {
