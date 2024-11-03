@@ -3,6 +3,7 @@ package storage
 import (
 	"ConfigApp/model"
 	"context"
+	"strconv"
 
 	supa "github.com/nedpals/supabase-go"
 )
@@ -25,4 +26,14 @@ func (s *SupabaseStorage) CreateDeviceInfo(deviceInfo model.DeviceInfo) (model.D
 	}
 
 	return results[0], nil
+}
+
+func (s *SupabaseStorage) GetDeviceInfoByOrgId(orgId int) ([]model.DeviceInfo, error) {
+	ctx := context.Background()
+	var results []model.DeviceInfo
+	if err := s.client.DB.From("DeviceInfo").Select("*").Eq("org_id", strconv.Itoa(orgId)).ExecuteWithContext(ctx, &results); err != nil {
+		return nil, err
+	}
+
+	return results, nil
 }

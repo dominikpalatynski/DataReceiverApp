@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -27,7 +28,7 @@ func NewAPIServer(storage storage.Storage) *APIServer{
 	r := gin.Default()
 
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:4242"},
+		AllowOrigins:     []string{"http://localhost:5173", "http://localhost:4242"},
 		AllowMethods:     []string{"GET", "POST", "PUT", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
 		ExposeHeaders:    []string{"Content-Length"},
@@ -49,13 +50,8 @@ func (s *APIServer) Run() {
 }
 
 func (s *APIServer) registerRoutes() {
-	s.router.GET("/devices", s.test)
 	s.router.POST("/devices", s.addDeviceInfo)
-}
-
-func (s *APIServer) test(c *gin.Context) {
-	
-    c.JSON(http.StatusOK, "server response test")
+	s.router.GET("/devices/:orgId", s.getDeviceInfosByOrgId)
 }
 
 func (s *APIServer) addDeviceInfo(c *gin.Context) {
@@ -75,4 +71,21 @@ func (s *APIServer) addDeviceInfo(c *gin.Context) {
 	}
 
     c.JSON(http.StatusOK, deviceInfo)
+}
+
+func (s *APIServer) getDeviceInfosByOrgId(c *gin.Context) {
+	orgId, err := strconv.Atoi(c.Param("orgId"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "cannot parse orgId"})
+		return
+	}
+
+	deviceInfos, err := s.storage.GetDeviceInfoByOrgId(orgId)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+    c.JSON(http.StatusOK, deviceInfos)
 }
