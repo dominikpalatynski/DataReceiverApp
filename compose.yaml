@@ -13,6 +13,7 @@ services:
     volumes:
       - influxdb2-data:/var/lib/influxdb2
       - influxdb2-config:/etc/influxdb2
+
   grafana:
     image: grafana/grafana:latest
     ports:
@@ -25,25 +26,42 @@ services:
       - influxdb2
     volumes:
       - grafana-data:/var/lib/grafana
+
   mosquitto:
-      image: eclipse-mosquitto
-      hostname: mosquitto
-      container_name: mosquitto
-      restart: unless-stopped
-      ports:
-        - "1883:1883"
-        - "9001:9001"
-      volumes:
-        - ./mosquitto.conf:/mosquitto/config/mosquitto.conf
-        - mosquitto-data:/mosquitto/data
+    image: eclipse-mosquitto
+    hostname: mosquitto
+    container_name: mosquitto
+    restart: unless-stopped
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+    volumes:
+      - ./mosquitto.conf:/mosquitto/config/mosquitto.conf
+      - mosquitto-data:/mosquitto/data
+
   app:
     image: ghcr.io/dominikpalatynski/datareceiverapp:1.0.9
     depends_on:
       - mosquitto
     environment:
       - MQTT_BROKER=tcp://mosquitto:1883
+
+  nodered:
+    image: nodered/node-red
+    ports:
+      - "1880:1880"
+    environment:
+      - TZ=Europe/Warsaw 
+    depends_on:
+      - influxdb2
+      - grafana
+      - mosquitto
+    volumes:
+      - nodered-data:/data
+
 volumes:
   influxdb2-data:
   influxdb2-config:
   grafana-data:
   mosquitto-data:
+  nodered-data:
