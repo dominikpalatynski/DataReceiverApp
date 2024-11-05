@@ -12,6 +12,7 @@ public:
 	void begin();
 	void setCallback(MQTT_CALLBACK_SIGNATURE);
 	void connectToMQTT();
+	void subscribeTopic(const char *topic);
 	void publishData(const char *topic, const char *payload);
 	bool isConnected();
 	void loop();

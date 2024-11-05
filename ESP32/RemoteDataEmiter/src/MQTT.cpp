@@ -1,5 +1,7 @@
 #include "MQTT.h"
 
+#define message_prefix "MQQT: "
+
 MQTTClientHandler::MQTTClientHandler(const char *mqttServer, int mqttPort, const char *mqttUser,
 									 const char *mqttPassword)
 	: mqttServer(mqttServer), mqttPort(mqttPort), mqttUser(mqttUser), mqttPassword(mqttPassword), client(espClient)
@@ -21,20 +23,24 @@ void MQTTClientHandler::connectToMQTT()
 {
 	while(!client.connected())
 	{
-		Serial.print("Łączenie z brokerem MQTT...");
+		Serial.print(String(message_prefix) + "Connecting with " + String(mqttServer) + "...\n");
 		if(client.connect("ESP32Client", mqttUser, mqttPassword))
 		{
-			Serial.println("połączono.");
-			client.subscribe("test/topic");
+			Serial.println(String(message_prefix) + "Connected.\n");
 		}
 		else
 		{
-			Serial.print("Błąd połączenia: ");
+			Serial.print(String(message_prefix) + "Cannot connect to the server: ");
 			Serial.print(client.state());
-			Serial.println(" - Próba ponownie za 5 sekund");
+			Serial.println(" - Retrying in 5 seconds\n");
 			delay(5000);
 		}
 	}
+}
+
+void MQTTClientHandler::subscribeTopic(const char *topic)
+{
+	client.subscribe(topic);
 }
 
 void MQTTClientHandler::publishData(const char *topic, const char *payload)
@@ -42,14 +48,14 @@ void MQTTClientHandler::publishData(const char *topic, const char *payload)
 	if(client.connected())
 	{
 		client.publish(topic, payload);
-		Serial.print("Wysłano wiadomość: ");
+		Serial.print(String(message_prefix) + "Message send: ");
 		Serial.print(payload);
-		Serial.print(" na temat: ");
-		Serial.println(topic);
+		Serial.print(" to topic: ");
+		Serial.println(String(topic) + "\n");
 	}
 	else
 	{
-		Serial.println("Nie można wysłać - brak połączenia z MQTT");
+		Serial.println(String(message_prefix) + "Cannot send message to the server. \n");
 	}
 }
 
