@@ -27,6 +27,7 @@ void WiFiHandler::connect()
 	}
 
 	Serial.println(String(message_prefix) + "Connected with " + String(m_ssid) + "\n");
+	configTime(0, 0, "pool.ntp.org", "time.nist.gov");
 }
 
 bool WiFiHandler::isConnected()

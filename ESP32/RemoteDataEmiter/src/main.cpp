@@ -1,4 +1,5 @@
 #include "IBusHandler.h"
+#include "JsonGenerator.h"
 #include "MQTT.h"
 #include "WiFiHandler.h"
 #include "display.h"
@@ -26,6 +27,7 @@ MQTTClientHandler mqttHandler(mqttServer, mqttPort, mqttUser, mqttPassword);
 OLEDDisplay myDisplay;
 HardwareSerial mySerial(2);
 IBusHandler ibusHandler(mySerial);
+JsonGenerator jsonGen;
 
 void mqttCallback(char *topic, byte *message, unsigned int length)
 {
@@ -119,7 +121,13 @@ void publishData()
 
 	if(mqttHandler.isConnected())
 	{
-		mqttHandler.publishData(topic, String(liczba).c_str());
+		jsonGen.initializeJson("device1");
+		jsonGen.addSensorData(liczba, "device1sensor1");
+		jsonGen.addSensorData(10000 - liczba, "device1sensor2");
+
+		String jsonString = jsonGen.generateJsonString();
+		Serial.println(jsonString);
+		mqttHandler.publishData(topic, jsonString.c_str());
 		myDisplay.setRow(3, String(topic).substring(0, 20));
 		myDisplay.setRow(5, String(liczba));
 	}
@@ -135,19 +143,13 @@ void mqttTask(void *pvParameters)
 		xQueuePeek(wifiStatusQueue, &wifiConnected, portMAX_DELAY);
 		if(wifiConnected)
 		{
-			if(!wasConnected)
+			if(!mqttHandler.isConnected())
 			{
 				mqttHandler.begin();
 				mqttHandler.setCallback(mqttCallback);
-
-				wasConnected = true;
 			}
 
 			publishData();
-		}
-		else
-		{
-			wasConnected = false;
 		}
 
 		vTaskDelay(5000 / portTICK_PERIOD_MS);
