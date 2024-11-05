@@ -40,9 +40,9 @@ services:
       - mosquitto-data:/mosquitto/data
 
   app:
-    image: ghcr.io/dominikpalatynski/datareceiverapp:1.0.9
-    depends_on:
-      - mosquitto
+    build:
+      context: .
+      dockerfile: Dockerfile
     environment:
       - MQTT_BROKER=tcp://mosquitto:1883
 

@@ -1,18 +1,17 @@
-# Użyj obrazu Go jako podstawowego
 FROM golang:1.22.2 AS builder
 
-WORKDIR /app
+WORKDIR /app/GolangApp
 
-COPY go.mod go.sum ./
+COPY GolangApp/go.mod GolangApp/go.sum ./
 
 RUN go mod download
 
-COPY cmd/ ./cmd
+COPY GolangApp/ .
 
 RUN CGO_ENABLED=0 GOOS=linux go build -o app ./cmd/main.go
 
 FROM alpine:latest
 
-COPY --from=builder /app/app .
+COPY --from=builder /app/GolangApp/app ./
 
 CMD ["./app"]
