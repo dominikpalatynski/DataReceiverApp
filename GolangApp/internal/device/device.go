@@ -25,7 +25,17 @@ func (dm *DeviceManager) ProcessMQTTMessage(client mqtt.Client, msg mqtt.Message
         log.Printf("Błąd parsowania JSON: %v", err)
     }
 
-    err :=  dm.influxClient.WriteData(context.Background(), snapshot)
+	deviceData, ok := fetchDeviceData(snapshot.DeviceId)
+	if ok != nil {
+		log.Printf("Błąd pobierania danych urządzenia: %v", ok)
+		return
+	}
+
+	point := preparePoint(*deviceData, snapshot)
+
+	log.Printf("Pobrano dane urządzenia: %v", deviceData)
+
+    err :=  dm.influxClient.WriteData(context.Background(), point)
 	if err != nil {
 		log.Printf("Błąd zapisu do InfluxDB: %v", err)
 	}
