@@ -53,7 +53,7 @@ func (s *APIServer) registerRoutes() {
 	s.router.POST("/devices", s.addDeviceInfo)
 	s.router.GET("/devices/:orgId", s.getDeviceInfosByOrgId)
 	s.router.GET("/org/devices/:deviceId", s.getDeviceInfosByDeviceId)
-
+	s.router.GET("/deviceData/:deviceId", s.getDeviceDataByDeviceId)
 }
 
 func (s *APIServer) addDeviceInfo(c *gin.Context) {
@@ -107,4 +107,21 @@ func (s *APIServer) getDeviceInfosByDeviceId(c *gin.Context) {
 	}
 
     c.JSON(http.StatusOK, deviceInfo)
+}
+
+func (s *APIServer) getDeviceDataByDeviceId(c *gin.Context) {
+	deviceId, err := strconv.Atoi(c.Param("deviceId"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "cannot parse deviceId"})
+		return
+	}
+
+	deviceData, err := s.storage.GetDeviceDataByDeviceId(deviceId)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+    c.JSON(http.StatusOK, deviceData)
 }

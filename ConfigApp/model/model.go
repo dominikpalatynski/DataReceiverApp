@@ -7,3 +7,18 @@ type DeviceInfo struct {
 	Name     string `json:"name" binding:"required" db:"name"`
 	Bucket   string `json:"bucket" binding:"required" db:"bucket"`
 }
+
+type Organization struct {
+	BucketName string `json:"bucket"`
+}
+
+type SensorData struct {
+	Id           int    `json:"id"`
+	VariableName string `json:"variable_name"`
+}
+
+type DeviceData struct {
+	Organization Organization `json:"organization"`
+	Name         string       `json:"name"`
+	Sensor       []SensorData `json:"sensor"`
+}

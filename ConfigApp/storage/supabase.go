@@ -52,3 +52,17 @@ func (s *SupabaseStorage) GetDeviceInfoByDeviceId(deviceId int) (*model.DeviceIn
 
 	return &results[0], nil
 }
+
+func (s *SupabaseStorage) GetDeviceDataByDeviceId(deviceId int) (*model.DeviceData, error) {
+	ctx := context.Background()
+	var results []model.DeviceData
+	if err := s.client.DB.From("DeviceInfo").Select("name, Organization(bucket), Sensor(id, variable_name)").Eq("id", strconv.Itoa(deviceId)).ExecuteWithContext(ctx, &results); err != nil {
+		return nil, err
+	}
+
+	if len(results) == 0 {
+		return nil, errors.New("deviceInfo not found for the given orgId")
+	}
+
+	return &results[0], nil
+}
