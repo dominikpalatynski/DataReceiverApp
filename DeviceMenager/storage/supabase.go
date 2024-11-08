@@ -4,6 +4,7 @@ import (
 	"ConfigApp/model"
 	"context"
 	"errors"
+	"fmt"
 	"strconv"
 
 	supa "github.com/nedpals/supabase-go"
@@ -13,8 +14,7 @@ type SupabaseStorage struct {
     client *supa.Client
 }
 
-func NewSupabaseStorage(url, apiKey string) *SupabaseStorage {
-    client := supa.CreateClient(url, apiKey)
+func NewSupabaseStorage(client *supa.Client) *SupabaseStorage {
     return &SupabaseStorage{client: client}
 }
 
@@ -65,4 +65,16 @@ func (s *SupabaseStorage) GetDeviceDataByDeviceId(deviceId int) (*model.DeviceDa
 	}
 
 	return &results[0], nil
+}
+
+func (s *SupabaseStorage) CreateOrganization(organization model.OrganizationData) (model.OrganizationData, error) {
+
+	ctx := context.Background()
+	var results []model.OrganizationData
+	if err := s.client.DB.From("Organization").Insert(organization).ExecuteWithContext(ctx, &results); err != nil {
+		fmt.Println(err)
+		return model.OrganizationData{}, err
+	}
+
+	return results[0], nil
 }

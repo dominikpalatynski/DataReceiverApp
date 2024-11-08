@@ -1,17 +1,17 @@
 FROM golang:1.22.2 AS builder
 
-WORKDIR /app/GolangApp
+WORKDIR /app/DataReceiver
 
-COPY GolangApp/go.mod GolangApp/go.sum ./
+COPY DataReceiver/go.mod DataReceiver/go.sum ./
 
 RUN go mod download
 
-COPY GolangApp/ .
+COPY DataReceiver/ .
 
 RUN CGO_ENABLED=0 GOOS=linux go build -o app ./cmd/main.go
 
 FROM alpine:latest
 
-COPY --from=builder /app/GolangApp/app ./
+COPY --from=builder /app/DataReceiver/app ./
 
 CMD ["./app"]

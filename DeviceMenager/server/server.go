@@ -3,6 +3,8 @@ package server
 import (
 	"ConfigApp/model"
 	"ConfigApp/storage"
+	"ConfigApp/user"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -22,9 +24,10 @@ func LoadEnv() {
 type APIServer struct {
 	router *gin.Engine
 	storage storage.Storage
+	userHandler user.UserHandler
 }
 
-func NewAPIServer(storage storage.Storage) *APIServer{
+func NewAPIServer(storage storage.Storage, userHandler user.UserHandler) *APIServer{
 	r := gin.Default()
 
 	r.Use(cors.New(cors.Config{
@@ -38,6 +41,7 @@ func NewAPIServer(storage storage.Storage) *APIServer{
 	server := &APIServer{
 		router: r,
 		storage: storage,
+		userHandler: userHandler,
 	}
 	return server
 }
@@ -51,6 +55,7 @@ func (s *APIServer) Run() {
 
 func (s *APIServer) registerRoutes() {
 	s.router.POST("/devices", s.addDeviceInfo)
+	s.router.POST("/org/create", s.createOrg)
 	s.router.GET("/devices/:orgId", s.getDeviceInfosByOrgId)
 	s.router.GET("/org/devices/:deviceId", s.getDeviceInfosByDeviceId)
 	s.router.GET("/deviceData/:deviceId", s.getDeviceDataByDeviceId)
@@ -73,6 +78,44 @@ func (s *APIServer) addDeviceInfo(c *gin.Context) {
 	}
 
     c.JSON(http.StatusOK, deviceInfo)
+}
+
+func (s *APIServer) createOrg(c *gin.Context) {
+	
+	token, err := c.Cookie("sb-zsgthpzpbdkcdcdyzbkt-auth-token")
+	if err != nil {
+		fmt.Println("error here")
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Token not found"})
+		return
+	}
+
+	fmt.Println(token)
+
+	user, ok := s.userHandler.GetUserData(token)
+	if ok != nil {
+		fmt.Println("error here 2")
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
+		return
+	}
+
+	fmt.Println(user.ID)
+
+	organizationDataReq := new(model.OrganizationData)
+
+	if ok := getOrganizationDataFromAPI(c, organizationDataReq); ok != nil {
+		c.JSON(http.StatusMethodNotAllowed, gin.H{"error": ok.Error()})
+		return
+	}
+
+	organizationDataResponse, err := s.storage.CreateOrganization(*organizationDataReq)
+
+	if err != nil {
+		fmt.Println("error here 3")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+    c.JSON(http.StatusOK, organizationDataResponse)
 }
 
 func (s *APIServer) getDeviceInfosByOrgId(c *gin.Context) {

@@ -22,3 +22,8 @@ type DeviceData struct {
 	Name         string       `json:"name"`
 	Sensor       []SensorData `json:"sensor"`
 }
+
+type OrganizationData struct {
+	Name   string `json:"name" binding:"required" db:"name"`
+	Bucket string `json:"bucket" binding:"required" db:"bucket"`
+}
