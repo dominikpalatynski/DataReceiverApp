@@ -5,7 +5,12 @@ type DeviceInfo struct {
 	OrgId    int    `json:"org_id" binding:"required" db:"org_id"`
 	Interval int    `json:"interval" binding:"required" db:"interval"`
 	Name     string `json:"name" binding:"required" db:"name"`
-	Bucket   string `json:"bucket" binding:"required" db:"bucket"`
+}
+
+type DeviceInfoRequest struct {
+	OrgId    int    `json:"org_id" binding:"required" db:"org_id"`
+	Interval int    `json:"interval" binding:"required" db:"interval"`
+	Name     string `json:"name" binding:"required" db:"name"`
 }
 
 type Organization struct {
@@ -23,7 +28,60 @@ type DeviceData struct {
 	Sensor       []SensorData `json:"sensor"`
 }
 
-type OrganizationData struct {
+type OrganizationDataRequest struct {
 	Name   string `json:"name" binding:"required" db:"name"`
 	Bucket string `json:"bucket" binding:"required" db:"bucket"`
+}
+
+type OrganizationDataReponse struct {
+	ID     int    `json:"id" binding:"required" db:"id"`
+	Name   string `json:"name" binding:"required" db:"name"`
+	Bucket string `json:"bucket" binding:"required" db:"bucket"`
+}
+
+type UserOrganizationConnection struct {
+	OrgId  int    `json:"org_id" binding:"required" db:"org_id"`
+	UserId string `json:"user_id" binding:"required" db:"user_id"`
+	Role   string `json:"role" binding:"required" db:"role"`
+}
+
+type OrganizationName struct {
+	ID   int    `json:"id"`
+	Name string `json:"name"`
+}
+
+type UserOrganization struct {
+	Organization OrganizationName `json:"organization"`
+	Role         string           `json:"role"`
+}
+
+type SensorRequest struct {
+	DeviceId      int    `json:"device_id" binding:"required" db:"device_id"`
+	Variable_name string `json:"variable_name" binding:"required" db:"variable_name"`
+	Name          string `json:"name" binding:"required" db:"name"`
+	Slot          int    `json:"slot" binding:"required" db:"slot"`
+}
+
+type SensorResponse struct {
+	ID            int    `json:"id" binding:"required" db:"id"`
+	DeviceId      int    `json:"device_id" binding:"required" db:"device_id"`
+	Variable_name string `json:"variable_name" binding:"required" db:"variable_name"`
+	Name          string `json:"name" binding:"required" db:"name"`
+}
+
+type SlotInsert struct {
+	SlotNumber int `json:"slot_number"`
+	DeviceId   int `json:"device_id"`
+}
+
+type SlotSensor struct {
+	ID   int    `json:"id"`
+	Name string `json:"name"`
+}
+
+type Slot struct {
+	ID         int  `json:"id"`
+	SlotNumber int  `json:"slot_number"`
+	DeviceId   int  `json:"device_id"`
+	Sensor     *int `json:"sensor_id"`
 }

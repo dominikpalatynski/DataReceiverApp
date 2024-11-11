@@ -1,30 +1,29 @@
 package main
 
 import (
+	"ConfigApp/config"
 	"ConfigApp/server"
 	"ConfigApp/storage"
 	"ConfigApp/user"
 	"log"
-	"os"
 
-	"github.com/joho/godotenv"
 	supa "github.com/nedpals/supabase-go"
 )
 
-func LoadEnv() {
-	if err := godotenv.Load(".env"); err !=nil {
-		log.Fatal("Error loading .env")
-	}
-}
-
 func main() {
-	LoadEnv()
 
-	client := supa.CreateClient(os.Getenv("SUPABASE_URL"), os.Getenv("SUPABASE_KEY"))
+	
+	config, err := config.LoadConfig()
+
+	if err != nil {
+		log.Fatalf("Error loading config: %v", err)
+	}
+
+	client := supa.CreateClient(config.Database.Url, config.Database.Key)
 
 	storage := storage.NewSupabaseStorage(client)
 	userHandler := user.NewSupabaseUserHandler(client)
-	server := server.NewAPIServer(storage, userHandler)
+	server := server.NewAPIServer(storage, userHandler, *config)
 	server.Run()
 	select{}
 }
