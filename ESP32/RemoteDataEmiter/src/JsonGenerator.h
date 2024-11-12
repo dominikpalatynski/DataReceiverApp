@@ -4,7 +4,6 @@
 #include <ArduinoJson.h>
 #include <String>
 #include <ctime>
-#include <sys/time.h> // dla gettimeofday()
 
 class JsonGenerator
 {

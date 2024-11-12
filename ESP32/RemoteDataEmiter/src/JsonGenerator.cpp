@@ -6,11 +6,18 @@ JsonGenerator::JsonGenerator() : doc()
 
 String JsonGenerator::getTimeStamp()
 {
-	time_t now = time(nullptr);
+	time_t now;
+	time(&now);
+
+	now += 3600;
+
 	struct tm timeinfo;
+	gmtime_r(&now, &timeinfo);
+
 	char buffer[30];
-	localtime_r(&now, &timeinfo);
-	strftime(buffer, sizeof(buffer), "%Y-%m-%dT%H:%M:%S%z", &timeinfo);
+
+	strftime(buffer, sizeof(buffer), "%Y-%m-%dT%H:%M:%S+01:00", &timeinfo);
+
 	return String(buffer);
 }
 

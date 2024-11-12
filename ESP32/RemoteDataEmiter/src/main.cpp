@@ -123,10 +123,8 @@ void publishData()
 	{
 		jsonGen.initializeJson("device1");
 		jsonGen.addSensorData(liczba, "device1sensor1");
-		jsonGen.addSensorData(10000 - liczba, "device1sensor2");
 
 		String jsonString = jsonGen.generateJsonString();
-		Serial.println(jsonString);
 		mqttHandler.publishData(topic, jsonString.c_str());
 		myDisplay.setRow(3, String(topic).substring(0, 20));
 		myDisplay.setRow(5, String(liczba));
