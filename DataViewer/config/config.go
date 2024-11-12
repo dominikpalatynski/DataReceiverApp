@@ -14,6 +14,7 @@ type ServerConfig struct {
 type DatabaseConfig struct {
 	Url      string `mapstructure:"database_url"`
 	Key     string `mapstructure:"database_key"`
+	Org string `mapstructure:"database_org"`
 }
 
 type Config struct{
