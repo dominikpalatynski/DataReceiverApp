@@ -5,3 +5,8 @@ type QueryParams struct {
 	Measurement  string `json:"measurement"`
 	VariableName string `json:"variable_name"`
 }
+
+type DataPoint struct {
+	Time  interface{} `json:"time"`
+	Value interface{} `json:"value"`
+}

@@ -5,6 +5,7 @@ import (
 	"data_viewer/model"
 	"data_viewer/storage"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -67,7 +68,7 @@ func (s *APIServer) fetchDeviceData(c *gin.Context) {
 		return
 	}
 
-	data, err := s.storage.FetchData(queryParams)
+	data, err := s.storage.FetchData(queryParams, time.Now().Add(-1*time.Hour))
 
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -84,9 +85,6 @@ func (s *APIServer) wsHandler(c *gin.Context) {
         log.Println("WebSocket upgrade error:", err)
         return
     }
-    // defer conn.Close()
-
-    // Odbieranie wiadomości od klienta z konfiguracją zapytania
     _, message, err := conn.ReadMessage()
     if err != nil {
         log.Println("ReadMessage error:", err)
@@ -101,19 +99,65 @@ func (s *APIServer) wsHandler(c *gin.Context) {
         return
     }
 
-	for {
-        time.Sleep(5 * time.Second)
+	data, err := s.storage.FetchData(queryParams, time.Now().Add(-1*time.Hour))
 
-		data, err := s.storage.FetchData(queryParams)
+	if err != nil {
+		fmt.Println("InfluxDB query error here:", err)
+		return
+	}
+
+	if err := conn.WriteJSON(data); err != nil {
+		log.Println("WriteJSON error:", err)
+		return
+	}
+
+    if len(data) > 0 {
+		if err := conn.WriteJSON(data); err != nil {
+            log.Println("WriteJSON error:", err)
+            return
+        }
+    } else {
+		log.Println("No data to send")
+	}
+
+	var lastTimestamp time.Time
+
+	if t, ok := data[len(data)-1].Time.(time.Time); ok {
+		lastTimestamp = t
+	} else if s, ok := data[len(data)-1].Time.(string); ok {
+		lastTimestamp, _ = time.Parse(time.RFC3339, s)
+	} else {
+		log.Println("Unsupported time format")
+	}
+
+    ticker := time.NewTicker(4 * time.Second)
+    defer ticker.Stop()
+
+	for range ticker.C{
+
+		newData, err := s.storage.FetchData(queryParams, lastTimestamp)
 
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
-		}
-
-        if err := conn.WriteJSON(data); err != nil {
-            log.Println("WriteJSON error:", err)
+            log.Println("InfluxDB update query error:", err)
             break
+        }
+
+		if len(newData) > 0 {
+            lastDataTime := newData[len(newData)-1].Time.(time.Time)
+
+            if lastDataTime.After(lastTimestamp) {
+                log.Println("Sending new data:", newData)
+                if err := conn.WriteJSON(newData[len(newData)-1]); err != nil {
+                    log.Println("WriteJSON error:", err)
+                    break
+                }
+
+                lastTimestamp = lastDataTime
+            } else {
+                log.Println("No new data, skipping sending.")
+            }
+        } else {
+            log.Println("No new data to send.")
         }
     }
 

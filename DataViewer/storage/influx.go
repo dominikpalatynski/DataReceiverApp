@@ -4,6 +4,7 @@ import (
 	"context"
 	"data_viewer/model"
 	"fmt"
+	"time"
 
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 )
@@ -21,26 +22,26 @@ func NewClient(url, token, org string) *InfluxClient {
 	}
 }
 
-func (ic *InfluxClient) FetchData(queryParams *model.QueryParams) ([]map[string]interface{}, error) {
+func (ic *InfluxClient) FetchData(queryParams *model.QueryParams, since time.Time) ([]model.DataPoint, error) {
 	queryAPI := ic.client.QueryAPI(ic.org)
 
 	query := fmt.Sprintf(`
 		from(bucket: "%s")
-		|> range(start: -1h)
+		|> range(start: %s)
 		|> filter(fn: (r) => r["_measurement"] == "%s")
 		|> filter(fn: (r) => r["_field"] == "%s")
-	`, queryParams.Bucket, queryParams.Measurement, queryParams.VariableName)
+	`, queryParams.Bucket, since.Format(time.RFC3339), queryParams.Measurement, queryParams.VariableName)
 
 	result, err := queryAPI.Query(context.Background(), query)
 	if err != nil {
 		return nil, err
 	}
 
-	var data []map[string]interface{}
+	var data []model.DataPoint
 	for result.Next() {
-		data = append(data, map[string]interface{}{
-			"time":  result.Record().Time(),
-			"value": result.Record().Value(),
+		data = append(data, model.DataPoint{
+			Time:  result.Record().Time(),
+			Value: result.Record().Value(),
 		})
 	}
 

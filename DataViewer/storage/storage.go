@@ -1,7 +1,10 @@
 package storage
 
-import "data_viewer/model"
+import (
+	"data_viewer/model"
+	"time"
+)
 
 type Storage interface {
-	FetchData(*model.QueryParams) ([]map[string]interface{}, error)
+	FetchData(*model.QueryParams, time.Time) ([]model.DataPoint, error)
 }
