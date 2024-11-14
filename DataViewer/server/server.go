@@ -68,7 +68,7 @@ func (s *APIServer) fetchDeviceData(c *gin.Context) {
 		return
 	}
 
-	data, err := s.storage.FetchData(queryParams, time.Now().Add(-1*time.Hour))
+	data, err := s.storage.FetchData(queryParams, "-1h")
 
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -99,7 +99,7 @@ func (s *APIServer) wsHandler(c *gin.Context) {
         return
     }
 
-	data, err := s.storage.FetchData(queryParams, time.Now().Add(-1*time.Hour))
+	data, err := s.storage.FetchData(queryParams, "-1h")
 
 	if err != nil {
 		fmt.Println("InfluxDB query error here:", err)
@@ -120,43 +120,24 @@ func (s *APIServer) wsHandler(c *gin.Context) {
 		log.Println("No data to send")
 	}
 
-	var lastTimestamp time.Time
-
-	if t, ok := data[len(data)-1].Time.(time.Time); ok {
-		lastTimestamp = t
-	} else if s, ok := data[len(data)-1].Time.(string); ok {
-		lastTimestamp, _ = time.Parse(time.RFC3339, s)
-	} else {
-		log.Println("Unsupported time format")
-	}
-
-    ticker := time.NewTicker(4 * time.Second)
+    ticker := time.NewTicker(5 * time.Second)
     defer ticker.Stop()
 
 	for range ticker.C{
 
-		newData, err := s.storage.FetchData(queryParams, lastTimestamp)
-
+		newData, err := s.storage.FetchData(queryParams, "-5s")
 		if err != nil {
             log.Println("InfluxDB update query error:", err)
             break
         }
 
 		if len(newData) > 0 {
-            lastDataTime := newData[len(newData)-1].Time.(time.Time)
-
-            if lastDataTime.After(lastTimestamp) {
-                log.Println("Sending new data:", newData)
-                if err := conn.WriteJSON(newData[len(newData)-1]); err != nil {
-                    log.Println("WriteJSON error:", err)
-                    break
-                }
-
-                lastTimestamp = lastDataTime
-            } else {
-                log.Println("No new data, skipping sending.")
-            }
-        } else {
+			log.Println("Sending new data:", newData)
+			if err := conn.WriteJSON(newData[len(newData)-1]); err != nil {
+				log.Println("WriteJSON error:", err)
+				break
+			}
+		} else {
             log.Println("No new data to send.")
         }
     }
