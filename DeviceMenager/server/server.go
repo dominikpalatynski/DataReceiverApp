@@ -191,13 +191,9 @@ func (s *APIServer) getDeviceInfosByDeviceId(c *gin.Context) {
 }
 
 func (s *APIServer) getDeviceDataByDeviceId(c *gin.Context) {
-	deviceId, err := strconv.Atoi(c.Param("deviceId"))
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "cannot parse deviceId"})
-		return
-	}
+	deviceId := c.Param("deviceId")
 
-	deviceData, err := s.storage.GetDeviceDataByDeviceId(deviceId)
+	deviceData, err := s.getDeviceData(deviceId)
 
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})

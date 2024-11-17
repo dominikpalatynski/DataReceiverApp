@@ -3,16 +3,17 @@ package cache
 import (
 	"ConfigApp/config"
 	"ConfigApp/model"
-	"fmt"
-
 	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
 
 	"github.com/redis/go-redis/v9"
 )
 
 type Cache interface {
-	SetDeviceDataToCache(model.DeviceData) error
-	GetDeviceDataFromCache(int) (model.DeviceData, error)
+	SetDeviceDataToCache(model.DeviceData, string)
+	GetDeviceDataFromCache(string) (*model.DeviceData, error)
 }
 
 type RedisCache struct {
@@ -40,10 +41,40 @@ func NewRedisClient(config config.Config) (*RedisCache, error) {
 	}, nil
 }
 
-func (c RedisCache) SetDeviceDataToCache(model.DeviceData) error {
-	return nil
+func (c RedisCache) SetDeviceDataToCache(deviceData model.DeviceData, deviceKey string) {
+	deviceJSON, err := json.Marshal(deviceData)
+	if err != nil {
+		fmt.Printf("Can not marshal in to json: %+v\n", err)
+		return
+	}
+
+	ctx := context.Background()
+
+	err = c.client.Set(ctx, deviceKey, deviceJSON, 0).Err()
+	if err != nil {
+		fmt.Printf("Can not set data in to cache: %+v\n", err)
+		return
+	}
+	fmt.Print("DeviceData saved in cache \n")
 }
 
-func (c RedisCache) GetDeviceDataFromCache(int) (model.DeviceData, error) {
-	return model.DeviceData{}, nil
+func (c RedisCache) GetDeviceDataFromCache(deviceKey string) (*model.DeviceData, error) {
+
+	ctx := context.Background()
+
+	cachedData, err := c.client.Get(ctx, deviceKey).Result()
+
+	if err != nil {
+		return nil, errors.New("DeviceData not found")
+	}
+
+	var deviceData model.DeviceData
+
+	if err := json.Unmarshal([]byte(cachedData), &deviceData); err != nil {
+		return nil, err
+	}
+
+	fmt.Printf("Read data from cache: %+v\n", deviceData)
+
+	return &deviceData, nil
 }
