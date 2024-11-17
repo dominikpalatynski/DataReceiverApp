@@ -16,9 +16,15 @@ type DatabaseConfig struct {
 	Key     string `mapstructure:"database_key"`
 }
 
+type CacheConfig struct {
+	Url      string `mapstructure:"cache_url"`
+	Password     string `mapstructure:"cache_password"`
+}
+
 type Config struct{
 	Server   ServerConfig   `mapstructure:",squash"`
 	Database DatabaseConfig `mapstructure:",squash"`
+	Cache CacheConfig `mapstructure:",squash"`
 }
 
 func LoadConfig() (*Config, error) {

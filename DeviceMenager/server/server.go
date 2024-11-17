@@ -1,6 +1,7 @@
 package server
 
 import (
+	"ConfigApp/cache"
 	"ConfigApp/config"
 	"ConfigApp/model"
 	"ConfigApp/storage"
@@ -26,9 +27,10 @@ type APIServer struct {
 	storage storage.Storage
 	userHandler user.UserHandler
 	config config.Config
+	cache cache.Cache
 }
 
-func NewAPIServer(storage storage.Storage, userHandler user.UserHandler, config config.Config) *APIServer{
+func NewAPIServer(storage storage.Storage, userHandler user.UserHandler, config config.Config, cache cache.Cache) *APIServer{
 	r := gin.Default()
 
 	r.Use(cors.New(cors.Config{
@@ -44,6 +46,7 @@ func NewAPIServer(storage storage.Storage, userHandler user.UserHandler, config 
 		storage: storage,
 		userHandler: userHandler,
 		config: config,
+		cache: cache,
 	}
 	return server
 }
