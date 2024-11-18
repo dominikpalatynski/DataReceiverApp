@@ -10,8 +10,14 @@ COPY DataReceiver/ .
 
 RUN CGO_ENABLED=0 GOOS=linux go build -o app ./cmd/main.go
 
+RUN ls -la /app
+
 FROM alpine:latest
 
-COPY --from=builder /app/DataReceiver/app ./
+WORKDIR /root/
+
+COPY --from=builder /app/DataReceiver/app .
+
+COPY .env .
 
 CMD ["./app"]
