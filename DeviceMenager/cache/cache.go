@@ -2,6 +2,7 @@ package cache
 
 import (
 	"ConfigApp/config"
+	"ConfigApp/logging"
 	"ConfigApp/model"
 	"context"
 	"encoding/json"
@@ -26,15 +27,15 @@ func NewRedisClient(config config.Config) (*RedisCache, error) {
 		Addr:     config.Cache.Url, 
 		Password: config.Cache.Password,
 		DB:       0,
-	   })
+	})
 	  
-	   ctx := context.Background()
-	   pong, err := redisClient.Ping(ctx).Result()
-	   if err != nil {
-			return nil, err
-	   }
+	ctx := context.Background()
+	pong, err := redisClient.Ping(ctx).Result()
+	if err != nil {
+		return nil, err
+	}
 
-	   fmt.Println("Connected to Redis:", pong)
+	logging.Log.Info("Connected to Redis: %v", pong)
 
 	return &RedisCache{
 		client: redisClient,
