@@ -3,7 +3,7 @@ import type { Slot } from '../models/Slot.js';
 import type { Sensor } from '../models/Sensor.js';
 
 
-export const fetchDevicesByOrgId = async(id: number): Promise<Device[]> => {
+export const fetchDevicesByOrgId = async(id: string): Promise<Device[]> => {
     try {
         const response = await fetch(`http://localhost:5000/devices/${id}`,{
             method: 'GET',

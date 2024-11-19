@@ -17,7 +17,7 @@
 
   const fetchDevices = async () => {
     try {
-        const data: Device[] = await fetchDevicesByOrgId(1)
+        const data: Device[] = await fetchDevicesByOrgId(id)
         devicesStore.set(data)
     }
     catch (err) {
