@@ -3,7 +3,7 @@ package storage
 import "ConfigApp/model"
 
 type Storage interface {
-	CreateDeviceInfo(model.DeviceInfo) (model.DeviceInfo, error)
+	CreateDeviceInfo(model.AddDeviceInfo) (model.DeviceInfo, error)
 	CreateSensor(model.SensorRequest) (model.SensorResponse, error)
 	CreateOrganization(model.OrganizationDataRequest) (model.OrganizationDataReponse, error)
 	CreateUserOrganizationConnection(int, string, string) (model.UserOrganizationConnection, error)

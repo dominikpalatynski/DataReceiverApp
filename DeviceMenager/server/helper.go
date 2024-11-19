@@ -8,7 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func getDeviceInfoFromAPI(c *gin.Context, post *model.DeviceInfo) error{
+func getDeviceInfoFromAPI(c *gin.Context, post *model.AddDeviceInfo) error{
 	if err := c.ShouldBindJSON(post); err != nil {
 		return err
 	}

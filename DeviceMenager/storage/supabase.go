@@ -18,7 +18,7 @@ func NewSupabaseStorage(client *supa.Client) *SupabaseStorage {
     return &SupabaseStorage{client: client}
 }
 
-func (s *SupabaseStorage) CreateDeviceInfo(deviceInfo model.DeviceInfo) (model.DeviceInfo, error) {
+func (s *SupabaseStorage) CreateDeviceInfo(deviceInfo model.AddDeviceInfo) (model.DeviceInfo, error) {
 
 	ctx := context.Background()
 	var results []model.DeviceInfo

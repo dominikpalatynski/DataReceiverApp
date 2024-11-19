@@ -61,10 +61,10 @@ func (s *APIServer) Run() {
 
 func (s *APIServer) registerRoutes() {
 	s.router.POST("/device/add", s.addDeviceInfo)
-	s.router.POST("/org/create", s.createOrg)
 	s.router.POST("/device/sensor/add", s.addSensor)
-	s.router.GET("/org/connected", s.getOrganizationsConnectedToUser)
 	s.router.GET("/devices/:orgId", s.getDeviceInfosByOrgId)
+	s.router.POST("/org/create", s.createOrg)
+	s.router.GET("/org/connected", s.getOrganizationsConnectedToUser)
 	s.router.GET("/org/devices/:deviceId", s.getDeviceInfosByDeviceId)
 	s.router.GET("/deviceData/:deviceId", s.getDeviceDataByDeviceId)
 	s.router.GET("/deviceData/slots/:deviceId", s.getSlotsByDeviceId)
@@ -73,7 +73,7 @@ func (s *APIServer) registerRoutes() {
 
 func (s *APIServer) addDeviceInfo(c *gin.Context) {
 	
-	deviceInfoRequest := new(model.DeviceInfo)
+	deviceInfoRequest := new(model.AddDeviceInfo)
 
 	if ok := getDeviceInfoFromAPI(c, deviceInfoRequest); ok != nil {
 		c.JSON(http.StatusMethodNotAllowed, gin.H{"error": ok.Error()})
@@ -241,8 +241,9 @@ func (s *APIServer) getOrCreateDeviceID(c *gin.Context) {
     device, _ := s.storage.GetDeviceInfoByMAC(request.MAC)
 
     if device == nil {
-		newDeviceRequest := model.DeviceInfo{
+		newDeviceRequest := model.AddDeviceInfo{
 			Interval: 1000,
+			OrgId: 0,
 			MAC:      request.MAC,
 		}
 
