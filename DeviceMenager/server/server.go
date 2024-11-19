@@ -1,7 +1,9 @@
 package server
 
 import (
+	"ConfigApp/cache"
 	"ConfigApp/config"
+	"ConfigApp/logging"
 	"ConfigApp/model"
 	"ConfigApp/storage"
 	"ConfigApp/user"
@@ -26,9 +28,10 @@ type APIServer struct {
 	storage storage.Storage
 	userHandler user.UserHandler
 	config config.Config
+	cache cache.Cache
 }
 
-func NewAPIServer(storage storage.Storage, userHandler user.UserHandler, config config.Config) *APIServer{
+func NewAPIServer(storage storage.Storage, userHandler user.UserHandler, config config.Config, cache cache.Cache) *APIServer{
 	r := gin.Default()
 
 	r.Use(cors.New(cors.Config{
@@ -44,6 +47,7 @@ func NewAPIServer(storage storage.Storage, userHandler user.UserHandler, config 
 		storage: storage,
 		userHandler: userHandler,
 		config: config,
+		cache: cache,
 	}
 	return server
 }
@@ -189,16 +193,13 @@ func (s *APIServer) getDeviceInfosByDeviceId(c *gin.Context) {
 }
 
 func (s *APIServer) getDeviceDataByDeviceId(c *gin.Context) {
-	deviceId, err := strconv.Atoi(c.Param("deviceId"))
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "cannot parse deviceId"})
-		return
-	}
+	deviceId := c.Param("deviceId")
 
-	deviceData, err := s.storage.GetDeviceDataByDeviceId(deviceId)
+	deviceData, err := s.getDeviceData(deviceId)
 
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		logging.Log.Errorf("Error getting device data: %v", err)
 		return
 	}
 
@@ -208,7 +209,7 @@ func (s *APIServer) getDeviceDataByDeviceId(c *gin.Context) {
 func (s *APIServer) getSlotsByDeviceId(c *gin.Context) {
 	deviceId, err := strconv.Atoi(c.Param("deviceId"))
 	if err != nil {
-		fmt.Println("here1")
+		logging.Log.Errorf("Error during extracting params: %v", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "cannot parse deviceId"})
 		return
 	}
@@ -216,11 +217,12 @@ func (s *APIServer) getSlotsByDeviceId(c *gin.Context) {
 	slots, err := s.storage.GetSlotsByDeviceId(deviceId)
 
 	if err != nil {
-		fmt.Println("here2")
+		logging.Log.Errorf("Error getting slots from DB: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
+	logging.Log.Infof("Slots: %v", slots)
     c.JSON(http.StatusOK, slots)
 }
 
@@ -262,7 +264,6 @@ func (s *APIServer) getOrganizationsConnectedToUser(c *gin.Context) {
 
 	token, err := c.Cookie(s.config.Server.AuthCookieName)
 	if err != nil {
-		fmt.Println("error here")
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Token not found"})
 		return
 	}

@@ -135,21 +135,29 @@ package main
 
 import (
 	"data_receiver/internal/broker"
+	"data_receiver/internal/config"
 	"data_receiver/internal/device"
 	"log"
 )
 
 func main() {
-    deviceManager := device.NewDeviceManager("http://influxdb2:8086", "mytoken", "myorg")
 
-    mqttClient, err := broker.NewClient("tcp://mosquitto:1883")
+    config, err := config.LoadConfig()
+
+    if err != nil {
+        log.Fatalf("Fatal error during config load %v", err)
+    }
+
+    deviceManager := device.NewDeviceManager(config.Database.Url, config.Database.Token, config.Database.Org)
+
+    mqttClient, err := broker.NewClient(config.Broker.BrokerUrl)
     if err != nil {
         log.Fatalf("Błąd konfiguracji MQTT: %v", err)
     } else {
         log.Println("Połączono z brokerem MQTT")
     }
 
-    if token := mqttClient.Subscribe("devices/+/measurements", 0, deviceManager.ProcessMQTTMessage); token.Wait() && token.Error() != nil {
+    if token := mqttClient.Subscribe(config.Broker.TopicPattern, 0, deviceManager.ProcessMQTTMessage); token.Wait() && token.Error() != nil {
         log.Fatalf("Błąd subskrybowania: %v", token.Error())
     } else {
         log.Println("Subskrybowano temat devices/+/measurements")
