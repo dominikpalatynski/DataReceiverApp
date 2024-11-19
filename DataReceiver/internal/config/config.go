@@ -7,7 +7,6 @@ import (
 )
 
 type ServerConfig struct {
-	Port string    `mapstructure:"server_port"`
 	DeviceMenagerUrl string `mapstructure:"device_menager_url"`
 }
 
