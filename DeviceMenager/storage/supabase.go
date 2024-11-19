@@ -18,7 +18,7 @@ func NewSupabaseStorage(client *supa.Client) *SupabaseStorage {
     return &SupabaseStorage{client: client}
 }
 
-func (s *SupabaseStorage) CreateDeviceInfo(deviceInfo model.DeviceInfoRequest) (model.DeviceInfo, error) {
+func (s *SupabaseStorage) CreateDeviceInfo(deviceInfo model.DeviceInfo) (model.DeviceInfo, error) {
 
 	ctx := context.Background()
 	var results []model.DeviceInfo
@@ -51,6 +51,25 @@ func (s *SupabaseStorage) GetDeviceInfoByDeviceId(deviceId int) (*model.DeviceIn
 	}
 
 	return &results[0], nil
+}
+
+func (s *SupabaseStorage) GetDeviceInfoByMAC(mac string) (*model.DeviceInfo, error) {
+    ctx := context.Background()
+
+    var results []model.DeviceInfo
+    err := s.client.DB.From("DeviceInfo").
+        Select("*").
+		Eq("mac_adress", mac).
+        ExecuteWithContext(ctx, &results)
+    if err != nil {
+        return nil, err
+    }
+
+    if len(results) == 0 {
+        return nil, errors.New("device not found in database")
+    }
+
+    return &results[0], nil
 }
 
 func (s *SupabaseStorage) GetDeviceDataByDeviceId(deviceId int) (*model.DeviceData, error) {

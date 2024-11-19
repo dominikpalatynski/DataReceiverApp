@@ -56,7 +56,7 @@ func (s *APIServer) Run() {
 }
 
 func (s *APIServer) registerRoutes() {
-	s.router.POST("/devices", s.addDeviceInfo)
+	s.router.POST("/device/add", s.addDeviceInfo)
 	s.router.POST("/org/create", s.createOrg)
 	s.router.POST("/device/sensor/add", s.addSensor)
 	s.router.GET("/org/connected", s.getOrganizationsConnectedToUser)
@@ -64,11 +64,12 @@ func (s *APIServer) registerRoutes() {
 	s.router.GET("/org/devices/:deviceId", s.getDeviceInfosByDeviceId)
 	s.router.GET("/deviceData/:deviceId", s.getDeviceDataByDeviceId)
 	s.router.GET("/deviceData/slots/:deviceId", s.getSlotsByDeviceId)
+	s.router.POST("/deviceData/get_unique_id", s.getOrCreateDeviceID)
 }
 
 func (s *APIServer) addDeviceInfo(c *gin.Context) {
 	
-	deviceInfoRequest := new(model.DeviceInfoRequest)
+	deviceInfoRequest := new(model.DeviceInfo)
 
 	if ok := getDeviceInfoFromAPI(c, deviceInfoRequest); ok != nil {
 		c.JSON(http.StatusMethodNotAllowed, gin.H{"error": ok.Error()})
@@ -222,6 +223,40 @@ func (s *APIServer) getSlotsByDeviceId(c *gin.Context) {
 
     c.JSON(http.StatusOK, slots)
 }
+
+func (s *APIServer) getOrCreateDeviceID(c *gin.Context) {
+    var request model.DeviceInitDataRequest
+    if err := c.ShouldBindJSON(&request); err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+        return
+    }
+
+    if request.Token != "sample_token" {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "Missing or invalid token"})
+        return
+    }
+
+    device, _ := s.storage.GetDeviceInfoByMAC(request.MAC)
+
+    if device == nil {
+		newDeviceRequest := model.DeviceInfo{
+			Interval: 1000,
+			MAC:      request.MAC,
+		}
+
+		createdDevice, err := s.storage.CreateDeviceInfo(newDeviceRequest)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create new device: " + err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, model.DeviceInitDataResponse{Id: strconv.Itoa(createdDevice.Id)})
+		return
+	}
+
+    c.JSON(http.StatusOK, model.DeviceInitDataResponse{Id: strconv.Itoa(device.Id)})
+}
+
 
 func (s *APIServer) getOrganizationsConnectedToUser(c *gin.Context) {
 

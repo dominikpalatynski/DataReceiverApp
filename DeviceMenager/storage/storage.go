@@ -3,7 +3,7 @@ package storage
 import "ConfigApp/model"
 
 type Storage interface {
-	CreateDeviceInfo(model.DeviceInfoRequest) (model.DeviceInfo, error)
+	CreateDeviceInfo(model.DeviceInfo) (model.DeviceInfo, error)
 	CreateSensor(model.SensorRequest) (model.SensorResponse, error)
 	CreateOrganization(model.OrganizationDataRequest) (model.OrganizationDataReponse, error)
 	CreateUserOrganizationConnection(int, string, string) (model.UserOrganizationConnection, error)
@@ -14,6 +14,7 @@ type Storage interface {
 	GetOrganizationsConnectedToUser(string) ([]model.UserOrganization, error)
 	GetDeviceInfoByOrgId(int) ([]model.DeviceInfo, error)
 	GetDeviceInfoByDeviceId(int) (*model.DeviceInfo, error)
+	GetDeviceInfoByMAC(string) (*model.DeviceInfo, error)
 	GetDeviceDataByDeviceId(int) (*model.DeviceData, error)
 	GetSlotsByDeviceId(int) ([]model.Slot, error)
 }
