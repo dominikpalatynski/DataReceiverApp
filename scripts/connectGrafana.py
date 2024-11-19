@@ -3,7 +3,7 @@ import json
 
 # Adres URL do Grafany i API
 grafana_url = "http://localhost:3000/api/datasources"
-api_key = "glsa_9rrRRuAHZtjEoYrZxjFBHkW9QGOye2up_24d0a715"
+api_key = "glsa_YWOsdfHYsYmt8JucU3jhYJcAwmeWQR8h_62c0a583"
 
 # Nagłówki uwierzytelniające i Content-Type
 headers = {
@@ -13,7 +13,7 @@ headers = {
 
 # Konfiguracja źródła danych dla InfluxDB 2.0 (Flux)
 data = {
-    "name": "InfluxDB",
+    "name": "TestDB",
     "type": "influxdb",
     "access": "proxy",
     "url": "http://host.docker.internal:8086",  # Adres do InfluxDB
@@ -21,10 +21,10 @@ data = {
     "password": "",  # Nie wymagane przy używaniu tokenów
     "database": "",  # Puste, bo w Flux nie definiujemy bazy danych na tym etapie
     "jsonData": {
-        "httpMode": "GET",
+        "httpMode": "GET",  
         "version": "Flux",
         "organization": "myorg",  # Twoja organizacja w InfluxDB
-        "defaultBucket": "mybucket"  # Domyślny bucket (baza danych)
+        "defaultBucket": "bucket"  # Domyślny bucket (baza danych)
     },
     "secureJsonData": {
         "token": "mytoken"  # Twój token do InfluxDB
