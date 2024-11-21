@@ -5,7 +5,6 @@ import (
 	"data_receiver/internal/models"
 	"fmt"
 	"log"
-	"time"
 
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 )
@@ -40,7 +39,7 @@ func (ic *InfluxClient) WriteData(ctx context.Context, point *models.Point) erro
 		point.Name,
 		point.Meta,
 		point.Data,
-		time.Now(),
+		point.TimeStamp,
 	)
 	if err := writeAPI.WritePoint(ctx, p); err != nil {
 		return err

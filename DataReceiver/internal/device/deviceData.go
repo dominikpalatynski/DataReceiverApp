@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"time"
 )
 
 func fetchDeviceData(deviceId string) (*models.DeviceData, error) {
@@ -46,6 +47,13 @@ func preparePoint(deviceData models.DeviceData, snapshot models.Snapshot) *model
 
 	point.Bucket = deviceData.Organization.BucketName
 	point.Name = deviceData.Name
+
+	parsedTime, err := time.Parse(time.RFC3339, snapshot.TimeStamp)
+	if err != nil {
+		fmt.Printf("Błąd parsowania czasu: %v", err)
+		return nil
+	}
+	point.TimeStamp = parsedTime
 
 	return &point
 }

@@ -1,5 +1,7 @@
 package models
 
+import "time"
+
 type Snapshot struct {
 	TimeStamp string   `json:"timeStamp"`
 	DeviceId  string   `json:"deviceID"`
@@ -27,8 +29,9 @@ type DeviceData struct {
 }
 
 type Point struct {
-	Bucket string
-	Name   string
-	Meta   map[string]string
-	Data   map[string]interface{}
+	Bucket    string
+	Name      string
+	Meta      map[string]string
+	Data      map[string]interface{}
+	TimeStamp time.Time
 }
