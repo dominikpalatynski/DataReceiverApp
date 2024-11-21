@@ -18,6 +18,4 @@ WORKDIR /root/
 
 COPY --from=builder /app/DataReceiver/app .
 
-COPY .env .
-
 CMD ["./app"]
