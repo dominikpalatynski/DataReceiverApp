@@ -7,14 +7,13 @@ type Storage interface {
 	CreateSensor(model.SensorRequest) (model.SensorResponse, error)
 	CreateOrganization(model.OrganizationDataRequest) (model.OrganizationDataReponse, error)
 	CreateUserOrganizationConnection(int, string, string) (model.UserOrganizationConnection, error)
-	CreateSlotsForDevice(int, int) error
+	CreateInitialSensorsForDevice(int, int) error
 
-	UpdateSlot(int, int, int) error
+	UpdateSensor(model.SensorUpdate) (*model.SensorUpdate, error)
 
 	GetOrganizationsConnectedToUser(string) ([]model.UserOrganization, error)
 	GetDeviceInfoByOrgId(int) ([]model.DeviceInfo, error)
 	GetDeviceInfoByDeviceId(int) (*model.DeviceInfo, error)
 	GetDeviceInfoByMAC(string) (*model.DeviceInfo, error)
 	GetDeviceDataByDeviceId(int) (*model.DeviceData, error)
-	GetSlotsByDeviceId(int) ([]model.Slot, error)
 }
