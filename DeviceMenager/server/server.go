@@ -68,6 +68,11 @@ func (s *APIServer) registerRoutes() {
 	s.router.GET("/deviceData/:deviceId", s.getDeviceDataByDeviceId)
 	s.router.POST("/deviceData/get_unique_id", s.getOrCreateDeviceID)
 	s.router.POST("/update_sensor", s.updateSensor)
+
+	authRoute := s.router.Group("/auth")
+	authRoute.Use(s.authGuard())
+	authRoute.POST("/org/create", s.createOrg)
+	authRoute.GET("/org/connected", s.getOrganizationsConnectedToUser)
 }
 
 func (s *APIServer) assignDeviceInfo(c *gin.Context) {
@@ -90,17 +95,9 @@ func (s *APIServer) assignDeviceInfo(c *gin.Context) {
 }
 
 func (s *APIServer) createOrg(c *gin.Context) {
-
-	token, err := c.Cookie(s.config.Server.AuthCookieName)
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Token not found"})
-		return
-	}
-
-	user, ok := s.userHandler.GetUserData(token)
-	if ok != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
-		return
+	uid, exist := c.Get("uid")
+	if !exist {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not found"})
 	}
 
 	organizationDataReq := new(model.OrganizationDataRequest)
@@ -117,7 +114,7 @@ func (s *APIServer) createOrg(c *gin.Context) {
 		return
 	}
 
-	if _, err := s.storage.CreateUserOrganizationConnection(organizationDataResponse.ID, user.ID, "owner"); err != nil {
+	if _, err := s.storage.CreateUserOrganizationConnection(organizationDataResponse.ID, uid.(string), "owner"); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -234,21 +231,12 @@ func (s *APIServer) getOrCreateDeviceID(c *gin.Context) {
 
 
 func (s *APIServer) getOrganizationsConnectedToUser(c *gin.Context) {
-
-	token, err := c.Cookie(s.config.Server.AuthCookieName)
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Token not found"})
-		return
+	uid, exist := c.Get("uid")
+	if !exist {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not found"})
 	}
 
-	user, ok := s.userHandler.GetUserData(token)
-	if ok != nil {
-		fmt.Println("error here 2")
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
-		return
-	}
-
-	organizationsConnectedToUser, err := s.storage.GetOrganizationsConnectedToUser(user.ID)
+	organizationsConnectedToUser, err := s.storage.GetOrganizationsConnectedToUser(uid.(string))
 
 	if err != nil {
 		fmt.Println(err.Error())
