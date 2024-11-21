@@ -55,7 +55,7 @@ func NewAPIServer(storage storage.Storage, userHandler user.UserHandler, config 
 func (s *APIServer) Run() {
 
 	s.registerRoutes()
-
+	fmt.Println("Server is running on port: " + s.config.Server.Port)
 	s.router.Run(":"+ s.config.Server.Port)
 }
 
@@ -105,7 +105,7 @@ func (s *APIServer) createOrg(c *gin.Context) {
 
 	user, ok := s.userHandler.GetUserData(token)
 	if ok != nil {
-		fmt.Println("error here 2")
+		fmt.Println("error here 2: %v", ok.Error())
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
 		return
 	}
