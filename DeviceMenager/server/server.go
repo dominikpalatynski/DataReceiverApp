@@ -60,7 +60,7 @@ func (s *APIServer) Run() {
 }
 
 func (s *APIServer) registerRoutes() {
-	s.router.POST("/device/add", s.addDeviceInfo)
+	s.router.POST("/device/assign", s.assignDeviceInfo)
 	s.router.GET("/devices/:orgId", s.getDeviceInfosByOrgId)
 	s.router.POST("/org/create", s.createOrg)
 	s.router.GET("/org/connected", s.getOrganizationsConnectedToUser)
@@ -70,7 +70,7 @@ func (s *APIServer) registerRoutes() {
 	s.router.POST("/update_sensor", s.updateSensor)
 }
 
-func (s *APIServer) addDeviceInfo(c *gin.Context) {
+func (s *APIServer) assignDeviceInfo(c *gin.Context) {
 	
 	deviceInfoRequest := new(model.AddDeviceInfo)
 
@@ -79,15 +79,11 @@ func (s *APIServer) addDeviceInfo(c *gin.Context) {
 		return
 	}
 
-	deviceInfo, err := s.storage.CreateDeviceInfo(*deviceInfoRequest)
+	deviceInfo, err := s.storage.AssignDeviceToOrganization(*deviceInfoRequest)
 
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
-	}
-
-	if err := s.storage.CreateInitialSensorsForDevice(deviceInfo.Id, 4); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 	}
 
     c.JSON(http.StatusOK, deviceInfo)
@@ -97,14 +93,12 @@ func (s *APIServer) createOrg(c *gin.Context) {
 
 	token, err := c.Cookie(s.config.Server.AuthCookieName)
 	if err != nil {
-		fmt.Println("error here")
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Token not found"})
 		return
 	}
 
 	user, ok := s.userHandler.GetUserData(token)
 	if ok != nil {
-		fmt.Println("error here 2: %v", ok.Error())
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
 		return
 	}

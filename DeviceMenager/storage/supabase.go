@@ -190,3 +190,25 @@ func (s *SupabaseStorage) UpdateSensor(sensor model.SensorUpdate) (*model.Sensor
 
 	return &results[0], nil
 }
+
+func (s *SupabaseStorage) AssignDeviceToOrganization(deviceInfo model.AddDeviceInfo) (*model.DeviceInfo, error) {
+
+	updateData := map[string]interface{}{
+		"org_id": deviceInfo.OrgId,
+		"name": deviceInfo.Name,
+		"interval": deviceInfo.Interval,
+	}
+
+	ctx := context.Background()
+	var results []model.DeviceInfo
+	if err := s.client.DB.From("DeviceInfo").Update(updateData).Eq("mac_adress", deviceInfo.MAC).ExecuteWithContext(ctx, &results); err != nil {
+		return nil, err
+	}
+
+	if condition := len(results) == 0; condition {
+		return nil, errors.New("device not found")
+		
+	}
+
+	return &results[0], nil
+}

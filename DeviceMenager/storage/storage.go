@@ -3,6 +3,7 @@ package storage
 import "ConfigApp/model"
 
 type Storage interface {
+	AssignDeviceToOrganization(model.AddDeviceInfo) (*model.DeviceInfo, error)
 	CreateDeviceInfo(model.AddDeviceInfo) (model.DeviceInfo, error)
 	CreateSensor(model.SensorRequest) (model.SensorResponse, error)
 	CreateOrganization(model.OrganizationDataRequest) (model.OrganizationDataReponse, error)
