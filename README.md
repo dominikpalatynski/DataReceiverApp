@@ -40,7 +40,7 @@ Aby uruchomić mikroserwis `DeviceManager` lokalnie:
 
 ### 3. Docker Compose `local.compose.yaml`
 
-Aby uruchomić mikroserwis `docker compose` lokalnie:
+Aby uruchomić `docker compose` lokalnie:
 
 1. **Utwórz plik `data_receiver.env` i `data_receiver.env`:**  
    W folderze głównym projektu utwórz pliki `.env` i uzupełnij go wymaganymi zmiennymi środowiskowymi.
@@ -55,6 +55,6 @@ Aby uruchomić mikroserwis `docker compose` lokalnie:
 
 ### 4. Frontend Setup `IndustrialMonitoringUI`
 
-Aby uruchomić mikroserwis `IndustrialMonitoringUI` lokalnie:
+Aby uruchomić frontend `IndustrialMonitoringUI` lokalnie:
 
-1. **Uruchom komendy `npm install` i `npm rund dev`:** 
+1. **Uruchom komendy `npm install` i `npm rund dev` w directory IndustrialMonitoringUI** 
