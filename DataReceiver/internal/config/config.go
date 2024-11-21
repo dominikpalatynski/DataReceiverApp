@@ -1,46 +1,54 @@
 package config
 
 import (
-	"fmt"
+	"context"
+	"log"
+	"os"
 
-	"github.com/spf13/viper"
+	"github.com/joho/godotenv"
+	"github.com/sethvargo/go-envconfig"
 )
 
 type ServerConfig struct {
-	DeviceMenagerUrl string `mapstructure:"device_menager_url"`
+	DeviceMenagerUrl string `env:"DEVICE_MANAGER_URL, required"`
 }
 
 type DatabaseConfig struct {
-	Url      string `mapstructure:"database_url"`
-	Token     string `mapstructure:"database_token"`
-	Org     string `mapstructure:"database_org"`
+	Url      string `env:"DATABASE_URL, required"`
+	Token     string `env:"DATABASE_TOKEN, required"`
+	Org     string `env:"DATABASE_ORG, required"`
 }
 
 type BrokerConfig struct {
-	TopicPattern string `mapstructure:"topic_pattern"`
-	BrokerUrl string `mapstructure:"broker_url"`
+	TopicPattern string `env:"TOPIC_PATTERN, required"`
+	BrokerUrl string `env:"BROKER_URL, required"`
 }
 
 type Config struct{
-	Server   ServerConfig   `mapstructure:",squash"`
-	Database DatabaseConfig `mapstructure:",squash"`
-	Broker BrokerConfig `mapstructure:",squash"`
+	Server   ServerConfig   
+	Database DatabaseConfig
+	Broker BrokerConfig
+}
+
+func loadEnv() {
+	if err := godotenv.Load("../.env"); err !=nil {
+		log.Fatal("Error loading .env")
+	}
 }
 
 func LoadConfig() (*Config, error) {
-	viper.SetConfigFile(".env")
-	viper.AutomaticEnv()
-	viper.SetEnvPrefix("")
-	viper.SetConfigType("env")
-
-	if err := viper.ReadInConfig(); err != nil {
-		return nil, fmt.Errorf("błąd ładowania pliku .env: %w", err)
+	deploymentVariant := os.Getenv("DR_DEPLOYMENT_VARIANT")
+	if deploymentVariant == "local" {
+		loadEnv()
 	}
 
-	var config Config
-	if err := viper.Unmarshal(&config); err != nil {
-		return nil, fmt.Errorf("błąd mapowania konfiguracji: %w", err)
-	}
+	ctx := context.Background()
 
-	return &config, nil
+	config := new(Config)
+
+	if err := envconfig.Process(ctx, config); err != nil {
+		log.Fatal(err)
+	  }
+
+	return config, nil
 }

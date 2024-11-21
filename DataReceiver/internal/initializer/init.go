@@ -14,7 +14,7 @@ func InitializeApplication() {
         log.Fatalf("Fatal error during config load %v", err)
     }
 
-	log.Print("Config loaded")
+	log.Print("Config loaded:%v", config)
 
     deviceManager, err := device.NewDeviceManager(config.Database.Url, config.Database.Token, config.Database.Org)
 	if err != nil {

@@ -9,7 +9,7 @@ import (
 )
 
 func fetchDeviceData(deviceId string) (*models.DeviceData, error) {
-	url := fmt.Sprintf("http://host.docker.internal:5000/deviceData/%s", deviceId)
+	url := fmt.Sprintf("http://device_menager:5000/deviceData/%s", deviceId)
 
 	resp, err := http.Get(url)
     if err != nil {
