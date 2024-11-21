@@ -2,10 +2,6 @@
 
 Ten plik zawiera kompletną instrukcję, jak uruchomić poszczególne części projektu **Industrial Monitoring** na swoim komputerze lokalnym.
 
----
-
-## 📦 Uruchamianie mikroserwisów
-
 ### 1. Mikroserwis `DataReceiver`
 
 Aby uruchomić mikroserwis `DataReceiver` lokalnie:
