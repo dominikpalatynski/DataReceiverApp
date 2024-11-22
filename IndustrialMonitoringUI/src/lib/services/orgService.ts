@@ -3,7 +3,7 @@ import type { Org, UserOrganization } from "$lib/models/Org.js";
 
 export const createOrg = async(org: {name: string; bucket: string;}): Promise<Org> => {
     try {
-        const response = await fetch('http://localhost:5000/org/create', {
+        const response = await fetch('http://localhost:5000/auth/org/create', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -23,7 +23,7 @@ export const createOrg = async(org: {name: string; bucket: string;}): Promise<Or
 
 export const fetchOrgsConnectedToUser = async(): Promise<UserOrganization[]> => {
     try {
-        const response = await fetch(`http://localhost:5000/org/connected`,{
+        const response = await fetch(`http://localhost:5000/auth/org/connected`,{
             method: 'GET',
             headers: {
                 'Content-Type': 'application'

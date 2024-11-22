@@ -6,10 +6,11 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"time"
 )
 
 func fetchDeviceData(deviceId string) (*models.DeviceData, error) {
-	url := fmt.Sprintf("http://host.docker.internal:5000/deviceData/%s", deviceId)
+	url := fmt.Sprintf("http://device_menager:5000/deviceData/%s", deviceId)
 
 	resp, err := http.Get(url)
     if err != nil {
@@ -46,6 +47,13 @@ func preparePoint(deviceData models.DeviceData, snapshot models.Snapshot) *model
 
 	point.Bucket = deviceData.Organization.BucketName
 	point.Name = deviceData.Name
+
+	parsedTime, err := time.Parse(time.RFC3339, snapshot.TimeStamp)
+	if err != nil {
+		fmt.Printf("Błąd parsowania czasu: %v", err)
+		return nil
+	}
+	point.TimeStamp = parsedTime
 
 	return &point
 }

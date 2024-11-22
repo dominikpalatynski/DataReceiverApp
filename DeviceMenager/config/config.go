@@ -1,46 +1,57 @@
 package config
 
 import (
-	"fmt"
+	"ConfigApp/logging"
+	"context"
+	"log"
+	"os"
 
-	"github.com/spf13/viper"
+	"github.com/joho/godotenv"
+	"github.com/sethvargo/go-envconfig"
 )
 
 type ServerConfig struct {
-	Port string    `mapstructure:"server_port"`
-	AuthCookieName string `mapstructure:"auth_cookie_name"`
+	Port string    `env:"SERVER_PORT, required"`
+	AuthCookieName string `env:"AUTH_COOKIE_NAME, required"`
 }
 
 type DatabaseConfig struct {
-	Url      string `mapstructure:"database_url"`
-	Key     string `mapstructure:"database_key"`
+	Url      string `env:"DATABASE_URL, required"`
+	Key     string `env:"DATABASE_KEY, required"`
 }
 
 type CacheConfig struct {
-	Url      string `mapstructure:"cache_url"`
-	Password     string `mapstructure:"cache_password"`
+	Url      string `env:"CACHE_URL, required"`
+	Password     string `env:"CACHE_PASSWORD, required"`
 }
 
 type Config struct{
-	Server   ServerConfig   `mapstructure:",squash"`
-	Database DatabaseConfig `mapstructure:",squash"`
-	Cache CacheConfig `mapstructure:",squash"`
+	Server   ServerConfig
+	Database DatabaseConfig
+	Cache CacheConfig
+}
+
+func loadEnv() {
+	if err := godotenv.Load(".env"); err !=nil {
+		log.Fatal("Error loading .env")
+	}
 }
 
 func LoadConfig() (*Config, error) {
-	viper.SetConfigFile(".env")
-	viper.AutomaticEnv()
-	viper.SetEnvPrefix("")
-	viper.SetConfigType("env")
-
-	if err := viper.ReadInConfig(); err != nil {
-		return nil, fmt.Errorf("błąd ładowania pliku .env: %w", err)
+	deploymentVariant := os.Getenv("DM_DEPLOYMENT_VARIANT")
+	if deploymentVariant == "local" {
+		loadEnv()
 	}
 
-	var config Config
-	if err := viper.Unmarshal(&config); err != nil {
-		return nil, fmt.Errorf("błąd mapowania konfiguracji: %w", err)
-	}
+	ctx := context.Background()
 
-	return &config, nil
+	config := new(Config)
+
+	if err := envconfig.Process(ctx, config); err != nil {
+		logging.Log.Fatalf("Cannot load configuration: %v", err)
+	  }
+
+	logging.Log.Info("Configuration loaded: %v", config)
+
+	return config, nil
 }

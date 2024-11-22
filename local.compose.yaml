@@ -50,12 +50,23 @@ services:
       - REDIS_PASSWORD=my-password
       - REDIS_PORT=6379
       - REDIS_DATABASES=16
-  app:
+  data_receiver:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: DataReceiver.Dockerfile
     env_file:
-      - .env
+      - data_receiver.env
+  device_menager:
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+    build:
+      context: .
+      dockerfile: DeviceMenager.Dockerfile
+    ports:
+      - "5000:5000"
+    env_file:
+      - device_menager.env
 volumes:
   influxdb2-data:
   influxdb2-config:

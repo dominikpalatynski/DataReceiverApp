@@ -32,6 +32,12 @@ type SensorData struct {
 	VariableName string `json:"variable_name"`
 }
 
+type SensorUpdate struct {
+	Id           int    `json:"id"`
+	VariableName string `json:"variable_name"`
+	Name         string `json:"name"`
+}
+
 type DeviceData struct {
 	Organization Organization `json:"organization"`
 	Name         string       `json:"name"`
@@ -79,19 +85,7 @@ type SensorResponse struct {
 	Name          string `json:"name" binding:"required" db:"name"`
 }
 
-type SlotInsert struct {
+type SensorInsert struct {
 	SlotNumber int `json:"slot_number"`
 	DeviceId   int `json:"device_id"`
-}
-
-type SlotSensor struct {
-	ID   int    `json:"id"`
-	Name string `json:"name"`
-}
-
-type Slot struct {
-	ID         int  `json:"id"`
-	SlotNumber int  `json:"slot_number"`
-	DeviceId   int  `json:"device_id"`
-	Sensor     *int `json:"sensor_id"`
 }

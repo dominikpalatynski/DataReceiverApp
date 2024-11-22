@@ -55,23 +55,27 @@ func NewAPIServer(storage storage.Storage, userHandler user.UserHandler, config 
 func (s *APIServer) Run() {
 
 	s.registerRoutes()
-
+	fmt.Println("Server is running on port: " + s.config.Server.Port)
 	s.router.Run(":"+ s.config.Server.Port)
 }
 
 func (s *APIServer) registerRoutes() {
-	s.router.POST("/device/add", s.addDeviceInfo)
-	s.router.POST("/device/sensor/add", s.addSensor)
+	s.router.POST("/device/assign", s.assignDeviceInfo)
 	s.router.GET("/devices/:orgId", s.getDeviceInfosByOrgId)
 	s.router.POST("/org/create", s.createOrg)
 	s.router.GET("/org/connected", s.getOrganizationsConnectedToUser)
 	s.router.GET("/org/devices/:deviceId", s.getDeviceInfosByDeviceId)
 	s.router.GET("/deviceData/:deviceId", s.getDeviceDataByDeviceId)
-	s.router.GET("/deviceData/slots/:deviceId", s.getSlotsByDeviceId)
 	s.router.POST("/deviceData/get_unique_id", s.getOrCreateDeviceID)
+	s.router.POST("/update_sensor", s.updateSensor)
+
+	authRoute := s.router.Group("/auth")
+	authRoute.Use(s.authGuard())
+	authRoute.POST("/org/create", s.createOrg)
+	authRoute.GET("/org/connected", s.getOrganizationsConnectedToUser)
 }
 
-func (s *APIServer) addDeviceInfo(c *gin.Context) {
+func (s *APIServer) assignDeviceInfo(c *gin.Context) {
 	
 	deviceInfoRequest := new(model.AddDeviceInfo)
 
@@ -80,34 +84,20 @@ func (s *APIServer) addDeviceInfo(c *gin.Context) {
 		return
 	}
 
-	deviceInfo, err := s.storage.CreateDeviceInfo(*deviceInfoRequest)
+	deviceInfo, err := s.storage.AssignDeviceToOrganization(*deviceInfoRequest)
 
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
-	}
-
-	if err := s.storage.CreateSlotsForDevice(deviceInfo.Id, 4); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 	}
 
     c.JSON(http.StatusOK, deviceInfo)
 }
 
 func (s *APIServer) createOrg(c *gin.Context) {
-
-	token, err := c.Cookie(s.config.Server.AuthCookieName)
-	if err != nil {
-		fmt.Println("error here")
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Token not found"})
-		return
-	}
-
-	user, ok := s.userHandler.GetUserData(token)
-	if ok != nil {
-		fmt.Println("error here 2")
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
-		return
+	uid, exist := c.Get("uid")
+	if !exist {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not found"})
 	}
 
 	organizationDataReq := new(model.OrganizationDataRequest)
@@ -124,7 +114,7 @@ func (s *APIServer) createOrg(c *gin.Context) {
 		return
 	}
 
-	if _, err := s.storage.CreateUserOrganizationConnection(organizationDataResponse.ID, user.ID, "owner"); err != nil {
+	if _, err := s.storage.CreateUserOrganizationConnection(organizationDataResponse.ID, uid.(string), "owner"); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -132,30 +122,25 @@ func (s *APIServer) createOrg(c *gin.Context) {
     c.JSON(http.StatusOK, organizationDataResponse)
 }
 
-func (s *APIServer) addSensor(c *gin.Context) {
+func (s *APIServer) updateSensor(c *gin.Context) {
 
-	sensorInsertRequest := new(model.SensorRequest)  
+	sensorUpdateRequest := new(model.SensorUpdate)  
 
-	if ok := getSensorInfoFromApi(c, sensorInsertRequest); ok != nil {
-		c.JSON(http.StatusMethodNotAllowed, gin.H{"error": ok.Error()})
-		return
-	}
-
-	sensorInsertResponse, err := s.storage.CreateSensor(*sensorInsertRequest)
+	if err := c.ShouldBindJSON(&sensorUpdateRequest); err != nil {
+		logging.Log.Warnf("Error during binding JSON: %v", err)
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+        return
+    }
+	updatedSensor, err := s.storage.UpdateSensor(*sensorUpdateRequest)
 
 	if err != nil {
+		logging.Log.Warnf("Error during updating: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	fmt.Print("slot number: " + strconv.Itoa(sensorInsertRequest.Slot))
-	if err := s.storage.UpdateSlot(sensorInsertRequest.DeviceId, sensorInsertRequest.Slot, sensorInsertResponse.ID); err != nil {
-		fmt.Println(err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-    c.JSON(http.StatusOK, sensorInsertResponse)
+	logging.Log.Infof("Sensor with id: %v updated successfully", updatedSensor.Id)
+    c.JSON(http.StatusOK, updatedSensor)
 }
 
 func (s *APIServer) getDeviceInfosByOrgId(c *gin.Context) {
@@ -206,26 +191,6 @@ func (s *APIServer) getDeviceDataByDeviceId(c *gin.Context) {
     c.JSON(http.StatusOK, deviceData)
 }
 
-func (s *APIServer) getSlotsByDeviceId(c *gin.Context) {
-	deviceId, err := strconv.Atoi(c.Param("deviceId"))
-	if err != nil {
-		logging.Log.Errorf("Error during extracting params: %v", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "cannot parse deviceId"})
-		return
-	}
-
-	slots, err := s.storage.GetSlotsByDeviceId(deviceId)
-
-	if err != nil {
-		logging.Log.Errorf("Error getting slots from DB: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	logging.Log.Infof("Slots: %v", slots)
-    c.JSON(http.StatusOK, slots)
-}
-
 func (s *APIServer) getOrCreateDeviceID(c *gin.Context) {
     var request model.DeviceInitDataRequest
     if err := c.ShouldBindJSON(&request); err != nil {
@@ -253,6 +218,10 @@ func (s *APIServer) getOrCreateDeviceID(c *gin.Context) {
 			return
 		}
 
+		if err := s.storage.CreateInitialSensorsForDevice(createdDevice.Id, 4); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		}
+	
 		c.JSON(http.StatusOK, model.DeviceInitDataResponse{Id: strconv.Itoa(createdDevice.Id)})
 		return
 	}
@@ -262,21 +231,12 @@ func (s *APIServer) getOrCreateDeviceID(c *gin.Context) {
 
 
 func (s *APIServer) getOrganizationsConnectedToUser(c *gin.Context) {
-
-	token, err := c.Cookie(s.config.Server.AuthCookieName)
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Token not found"})
-		return
+	uid, exist := c.Get("uid")
+	if !exist {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not found"})
 	}
 
-	user, ok := s.userHandler.GetUserData(token)
-	if ok != nil {
-		fmt.Println("error here 2")
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
-		return
-	}
-
-	organizationsConnectedToUser, err := s.storage.GetOrganizationsConnectedToUser(user.ID)
+	organizationsConnectedToUser, err := s.storage.GetOrganizationsConnectedToUser(uid.(string))
 
 	if err != nil {
 		fmt.Println(err.Error())

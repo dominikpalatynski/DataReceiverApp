@@ -14,9 +14,14 @@ type DeviceManager struct {
     influxClient *influx.InfluxClient
 }
 
-func NewDeviceManager(influxURL, token, org string) *DeviceManager {
-    influxClient := influx.NewClient(influxURL, token, org)
-    return &DeviceManager{influxClient: influxClient}
+func NewDeviceManager(influxURL, token, org string) (*DeviceManager, error) {
+    influxClient, err := influx.NewClient(influxURL, token, org)
+
+    if err != nil {
+        return nil, err
+    }
+
+    return &DeviceManager{influxClient: influxClient}, nil
 }
 
 func (dm *DeviceManager) ProcessMQTTMessage(client mqtt.Client, msg mqtt.Message) {

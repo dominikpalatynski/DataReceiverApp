@@ -152,17 +152,17 @@ func (s *SupabaseStorage) CreateSensor(sensorRequest model.SensorRequest) (model
 	return results[0], nil
 }
 
-func (s *SupabaseStorage) CreateSlotsForDevice(deviceId int, initialSlots int) error {
-	slots := make([]model.SlotInsert, initialSlots)
+func (s *SupabaseStorage) CreateInitialSensorsForDevice(deviceId int, initialSensors int) error {
+	sensors := make([]model.SensorInsert, initialSensors)
 
-	for i := 0; i < initialSlots; i++ {
-		slots[i] = model.SlotInsert{
+	for i := 0; i < initialSensors; i++ {
+		sensors[i] = model.SensorInsert{
 			DeviceId:   deviceId,
 			SlotNumber: i + 1,
 		}
 	}
 
-	if err := s.client.DB.From("Slot").Insert(slots).Execute(nil); err != nil {
+	if err := s.client.DB.From("Sensor").Insert(sensors).Execute(nil); err != nil {
 		fmt.Println(err.Error())
 		return err
 	}
@@ -170,27 +170,45 @@ func (s *SupabaseStorage) CreateSlotsForDevice(deviceId int, initialSlots int) e
 	return nil
 }
 
-func (s *SupabaseStorage) UpdateSlot(deviceId int, slotNumber int, sensorId int) error {
+func (s *SupabaseStorage) UpdateSensor(sensor model.SensorUpdate) (*model.SensorUpdate, error) {
 
 	updateData := map[string]interface{}{
-		"sensor_id": sensorId,
+		"variable_name": sensor.VariableName,
+		"name": sensor.Name,
 	}
 
 	ctx := context.Background()
-	var results []model.Slot
-	if err := s.client.DB.From("Slot").Update(updateData).Eq("device_id", strconv.Itoa(deviceId)).Eq("slot_number", strconv.Itoa(slotNumber)).ExecuteWithContext(ctx, &results); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (s *SupabaseStorage) GetSlotsByDeviceId(deviceId int) ([]model.Slot, error) {
-	var slots []model.Slot
-	ctx := context.Background()
-	if err := s.client.DB.From("Slot").Select("*").Eq("device_id", strconv.Itoa(deviceId)).ExecuteWithContext(ctx, &slots); err != nil {
+	var results []model.SensorUpdate
+	if err := s.client.DB.From("Sensor").Update(updateData).Eq("id", strconv.Itoa(sensor.Id)).ExecuteWithContext(ctx, &results); err != nil {
 		return nil, err
 	}
 
-	return slots, nil
+	if condition := len(results) == 0; condition {
+		return nil, errors.New("sensor not found")
+		
+	}
+
+	return &results[0], nil
+}
+
+func (s *SupabaseStorage) AssignDeviceToOrganization(deviceInfo model.AddDeviceInfo) (*model.DeviceInfo, error) {
+
+	updateData := map[string]interface{}{
+		"org_id": deviceInfo.OrgId,
+		"name": deviceInfo.Name,
+		"interval": deviceInfo.Interval,
+	}
+
+	ctx := context.Background()
+	var results []model.DeviceInfo
+	if err := s.client.DB.From("DeviceInfo").Update(updateData).Eq("mac_adress", deviceInfo.MAC).ExecuteWithContext(ctx, &results); err != nil {
+		return nil, err
+	}
+
+	if condition := len(results) == 0; condition {
+		return nil, errors.New("device not found")
+		
+	}
+
+	return &results[0], nil
 }

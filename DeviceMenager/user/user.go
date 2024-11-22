@@ -53,13 +53,13 @@ func (s *UserHandlerSupa) GetUserData(cookie string) (*supa.User, error) {
     // Wyciągnij access_token z dekodowanego ciasteczka
     accessToken, ok := tokenData["access_token"].(string)
     if !ok || accessToken == "" {
-		fmt.Println(ok)
+		fmt.Println("error tutaj1")
         return nil, errors.New("Access token not found")
     }
 	ctx := context.Background()
 	user, err := s.client.Auth.User(ctx, accessToken)
 	if err != nil {
-		fmt.Println(ok)
+		fmt.Println("error tutaj2")
 		return nil, errors.New("Invalid token")
 	}
 
