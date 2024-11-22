@@ -4,11 +4,15 @@
 #include "WiFiHandler.h"
 #include "display.h"
 
+#include <FS.h>
+#include <HTTPClient.h>
+#include <SPIFFS.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/queue.h>
 #include <freertos/task.h>
 
 QueueHandle_t wifiStatusQueue;
+SemaphoreHandle_t xSemaphore;
 
 void displayTask(void *pvParameters);
 void wifiTask(void *pvParameters);
@@ -20,20 +24,97 @@ const char *mqttServer = "74.248.137.150";
 const int mqttPort = 1883;
 const char *mqttUser = "mqttUser";
 const char *mqttPassword = "mqttPass";
-const char *topic = "devices/device1/measurements";
+String topic;
+const String serverUrl = "http://example.com/api/device-id"; // URL API
+const char *filePath = "/device_id.txt";
 
 WiFiHandler wifiHandler(ssid, password);
 MQTTClientHandler mqttHandler(mqttServer, mqttPort, mqttUser, mqttPassword);
 OLEDDisplay myDisplay;
 HardwareSerial mySerial(2);
 IBusHandler ibusHandler(mySerial);
-JsonGenerator jsonGen;
+
+void setupSPIFFS()
+{
+	if(!SPIFFS.begin(true))
+	{
+		Serial.println("Failed to initialize SPIFFS");
+		return;
+	}
+}
+
+String getMacAddress()
+{
+	String mac = WiFi.macAddress();
+	mac.replace(":", "");
+	return mac;
+}
+
+String sendHttpRequestWithMAC(const String &mac)
+{
+	HTTPClient http;
+	http.begin(serverUrl);
+	http.addHeader("Content-Type", "application/json");
+
+	JsonServerRequestID jsonGen;
+
+	String token = "sample_token";
+	jsonGen.initializeJson(mac, token);
+	String json = jsonGen.generateJsonString();
+
+	Serial.println("Request payload: " + json);
+
+	int httpCode = http.POST(json);
+	if(httpCode > 0)
+	{
+		if(httpCode == HTTP_CODE_OK)
+		{
+			String response = http.getString();
+			http.end();
+			return response;
+		}
+	}
+	else
+	{
+		Serial.println("HTTP request failed");
+	}
+
+	http.end();
+	return "";
+}
+
+void saveToFile(const char *path, const String &data)
+{
+	File file = SPIFFS.open(path, FILE_WRITE);
+	if(!file)
+	{
+		Serial.println("Failed to open file for writing");
+		return;
+	}
+	file.print(data);
+	file.close();
+	Serial.println("Data saved to file.");
+}
+
+String readFromFile(const char *path)
+{
+	File file = SPIFFS.open(path, FILE_READ);
+	if(!file)
+	{
+		Serial.println("Failed to open file for reading");
+		return "";
+	}
+
+	String content = file.readString();
+	file.close();
+	return content;
+}
 
 void mqttCallback(char *topic, byte *message, unsigned int length)
 {
-	Serial.print("Otrzymano wiadomość na temacie: ");
+	Serial.print("Recieved message on topic: ");
 	Serial.println(topic);
-	Serial.print("Wiadomość: ");
+	Serial.print("message: ");
 	for(int i = 0; i < length; i++)
 	{
 		Serial.print((char) message[i]);
@@ -41,22 +122,54 @@ void mqttCallback(char *topic, byte *message, unsigned int length)
 	Serial.println();
 }
 
-int liczba = 0;
+void publishData()
+{
+	int liczba = 0;
+	liczba += 69;
+
+	if(liczba > 10000)
+	{
+		liczba = 0;
+	}
+	mqttHandler.loop();
+
+	if(mqttHandler.isConnected())
+	{
+		JsonSensorDataGenerator jsonGen;
+		jsonGen.initializeJson("device1");
+		jsonGen.addSensorData(liczba, "device1sensor1");
+
+		String jsonString = jsonGen.generateJsonString();
+		mqttHandler.publishData(topic.c_str(), jsonString.c_str());
+		myDisplay.setRow(3, String(topic).substring(0, 20));
+		myDisplay.setRow(5, String(liczba));
+	}
+}
 
 void setup()
 {
 	Serial.begin(115200);
 
+	setupSPIFFS();
+
+	xSemaphore = xSemaphoreCreateBinary();
+
+	if(xSemaphore == NULL)
+	{
+		Serial.println("Can't create semaphore");
+		return;
+	}
 	wifiStatusQueue = xQueueCreate(1, sizeof(bool));
 
 	if(wifiStatusQueue == NULL)
 	{
-		Serial.println("Błąd przy tworzeniu kolejki.");
+		Serial.println("Can't create wifiStatus queue");
 		return;
 	}
 
 	xTaskCreate(displayTask, "Display Task", 4096, NULL, 1, NULL);
 	xTaskCreate(wifiTask, "WiFi Task", 4096, NULL, 1, NULL);
+	xTaskCreate(getDeviceIdTask, "Device ID request Task", 4096, NULL, 1, NULL);
 	xTaskCreate(mqttTask, "MQTT Task", 4096, NULL, 1, NULL);
 }
 
@@ -109,26 +222,37 @@ void wifiTask(void *pvParameters)
 	}
 }
 
-void publishData()
+void getDeviceIdTask(void *pvParameters)
 {
-	liczba += 69;
-
-	if(liczba > 10000)
+	String id;
+	while(id.isEmpty())
 	{
-		liczba = 0;
-	}
-	mqttHandler.loop();
+		if(SPIFFS.exists(filePath))
+		{
+			id = readFromFile(filePath);
+			if(id.length() > 0)
+			{
+				Serial.println("ID found in file: " + id);
+				xSemaphoreGive(xSemaphore);
+				topic = "devices/" + id + "/measurments";
+				return;
+			}
+		}
 
-	if(mqttHandler.isConnected())
-	{
-		jsonGen.initializeJson("device1");
-		jsonGen.addSensorData(liczba, "device1sensor1");
-
-		String jsonString = jsonGen.generateJsonString();
-		mqttHandler.publishData(topic, jsonString.c_str());
-		myDisplay.setRow(3, String(topic).substring(0, 20));
-		myDisplay.setRow(5, String(liczba));
+		Serial.println("ID not found. Sending HTTP request...");
+		String mac = getMacAddress();
+		id = sendHttpRequestWithMAC(mac);
+		if(id.length() > 0)
+		{
+			saveToFile(filePath, id);
+			xSemaphoreGive(xSemaphore);
+			topic = "devices/" + id + "/measurments";
+			return;
+		}
+		vTaskDelay(5000 / portTICK_PERIOD_MS);
 	}
+
+	Serial.println("Failed to get ID from server");
 }
 
 void mqttTask(void *pvParameters)
@@ -138,18 +262,21 @@ void mqttTask(void *pvParameters)
 
 	while(true)
 	{
-		xQueuePeek(wifiStatusQueue, &wifiConnected, portMAX_DELAY);
-		if(wifiConnected)
+		if(xSemaphoreTake(xSemaphore, portMAX_DELAY) == pdTRUE)
 		{
-			if(!mqttHandler.isConnected())
+			xQueuePeek(wifiStatusQueue, &wifiConnected, portMAX_DELAY);
+			if(wifiConnected)
 			{
-				mqttHandler.begin();
-				mqttHandler.setCallback(mqttCallback);
+				if(!mqttHandler.isConnected())
+				{
+					mqttHandler.begin();
+					mqttHandler.setCallback(mqttCallback);
+				}
+
+				publishData();
 			}
 
-			publishData();
+			vTaskDelay(5000 / portTICK_PERIOD_MS);
 		}
-
-		vTaskDelay(5000 / portTICK_PERIOD_MS);
 	}
 }
