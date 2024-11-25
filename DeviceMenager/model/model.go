@@ -44,6 +44,11 @@ type DeviceData struct {
 	Sensor       []SensorData `json:"sensor"`
 }
 
+type DeviceStateCredentials struct {
+	Organization Organization `json:"organization"`
+	Name         string       `json:"name"`
+}
+
 type OrganizationDataRequest struct {
 	Name   string `json:"name" binding:"required" db:"name"`
 	Bucket string `json:"bucket" binding:"required" db:"bucket"`

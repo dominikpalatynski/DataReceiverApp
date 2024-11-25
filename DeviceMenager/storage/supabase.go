@@ -86,6 +86,20 @@ func (s *SupabaseStorage) GetDeviceDataByDeviceId(deviceId int) (*model.DeviceDa
 	return &results[0], nil
 }
 
+func (s *SupabaseStorage) GetDeviceStateCredentials(deviceId int) (*model.DeviceStateCredentials, error) {
+	ctx := context.Background()
+	var results []model.DeviceStateCredentials
+	if err := s.client.DB.From("DeviceInfo").Select("name, Organization(bucket)").Eq("id", strconv.Itoa(deviceId)).ExecuteWithContext(ctx, &results); err != nil {
+		return nil, err
+	}
+
+	if len(results) == 0 {
+		return nil, errors.New("deviceInfo not found for the given deviceId")
+	}
+
+	return &results[0], nil
+}
+
 func (s *SupabaseStorage) CreateOrganization(organization model.OrganizationDataRequest) (model.OrganizationDataReponse, error) {
 
 	ctx := context.Background()
