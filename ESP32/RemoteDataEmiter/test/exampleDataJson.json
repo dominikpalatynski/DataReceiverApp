@@ -1,0 +1,14 @@
+{
+    "timeStamp":"2024-11-22T18:30:35+01:00",
+    "sensors":[
+        {
+            "data":69,
+            "sensorID":"sensor1"
+        },
+        {
+            "data":134,
+            "sensorID":"sensor2"
+        }
+    ]
+}
+

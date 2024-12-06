@@ -1,0 +1,56 @@
+{
+    "Type": "SensorsConfig",
+    "sensors": [
+        {
+            "sensorID": "sensor1",
+            "settings": {
+                "protocol": "UART",
+                "baudRate": 9600,
+                "parity": "none",
+                "wires":
+                {
+                    "RX": 1,
+                    "TX": 2
+                }
+
+            }
+        },
+        {
+            "sensorID": "sensor2",
+            "settings": {
+                "protocol": "I2C",
+                "address": 72,
+                "frequency": 100000,
+                "wires":
+                {
+                    "SCL": 3,
+                    "SDA": 4
+                }
+            }
+        },
+        {
+            "sensorID": "sensor3",
+            "settings": {
+                "protocol": "Analog",
+                "type": "potential",
+                "wires":
+                {
+                    "IN": 5,
+                    "GND": 6
+                }
+            }
+        },
+                {
+            "sensorID": "sensor4",
+            "settings": {
+                "protocol": "Analog",
+                "type": "resistive",
+                "wires":
+                {
+                    "IN": 7,
+                    "GND": 8
+                }
+            }
+        }
+    ]
+}
