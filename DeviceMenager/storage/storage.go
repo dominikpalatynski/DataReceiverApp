@@ -17,4 +17,5 @@ type Storage interface {
 	GetDeviceInfoByDeviceId(int) (*model.DeviceInfo, error)
 	GetDeviceInfoByMAC(string) (*model.DeviceInfo, error)
 	GetDeviceDataByDeviceId(int) (*model.DeviceData, error)
+	GetDeviceStateCredentials(int) (*model.DeviceStateCredentials, error)
 }

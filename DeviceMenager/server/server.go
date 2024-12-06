@@ -66,6 +66,7 @@ func (s *APIServer) registerRoutes() {
 	s.router.GET("/org/connected", s.getOrganizationsConnectedToUser)
 	s.router.GET("/org/devices/:deviceId", s.getDeviceInfosByDeviceId)
 	s.router.GET("/deviceData/:deviceId", s.getDeviceDataByDeviceId)
+	s.router.GET("/deviceState/:deviceId", s.getDevicStateCredentialsByDeviceId)
 	s.router.POST("/deviceData/get_unique_id", s.getOrCreateDeviceID)
 	s.router.POST("/update_sensor", s.updateSensor)
 
@@ -189,6 +190,20 @@ func (s *APIServer) getDeviceDataByDeviceId(c *gin.Context) {
 	}
 
     c.JSON(http.StatusOK, deviceData)
+}
+
+func (s *APIServer) getDevicStateCredentialsByDeviceId(c *gin.Context) {
+	deviceId := c.Param("deviceId")
+
+	deviceStateCreds, err := s.getDeviceStateCredentials(deviceId)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		logging.Log.Errorf("Error getting device data: %v", err)
+		return
+	}
+
+    c.JSON(http.StatusOK, deviceStateCreds)
 }
 
 func (s *APIServer) getOrCreateDeviceID(c *gin.Context) {

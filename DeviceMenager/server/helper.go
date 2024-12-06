@@ -55,3 +55,30 @@ func (s APIServer) getDeviceData(deviceId string) (*model.DeviceData, error) {
 
 	return deviceData, nil
 }
+
+func (s APIServer) getDeviceStateCredentials(deviceId string) (*model.DeviceStateCredentials, error) {
+
+	deviceKey := fmt.Sprintf("deviceStateCreds:%s", deviceId)
+
+	deviceStateCredentialsFromCache, ok := s.cache.GetDeviceStateCredentialsToCache(deviceKey)
+	if ok == nil {
+		return deviceStateCredentialsFromCache, nil
+	}
+	fmt.Print(ok)
+
+	deviceIdToInt, err := strconv.Atoi(deviceId)
+	if err != nil {
+		fmt.Print("Can not convert deviceId to int")
+		return nil, err
+	}
+
+	deviceStateCredentials, err := s.storage.GetDeviceStateCredentials(deviceIdToInt)
+
+	if err != nil {
+		return nil, err
+	}
+
+	s.cache.SetDeviceStateCredentialsToCache(*deviceStateCredentials, deviceKey)
+
+	return deviceStateCredentials, nil
+}
